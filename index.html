@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ZerohedgeQuant</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Syne:wght@400;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg-deep: #0a0c0f;
+  --bg-card: #111418;
+  --bg-card-hover: #161b22;
+  --border: #1e252e;
+  --text-primary: #e8eaed;
+  --text-secondary: #8b949e;
+  --text-muted: #484f58;
+  --accent: #00d4aa;
+  --accent-dim: rgba(0,212,170,0.12);
+  --accent2: #e6a817;
+  --red: #f85149;
+  --green: #3fb950;
+  --blue: #58a6ff;
+  --purple: #bc8cff;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'IBM Plex Mono', monospace;
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ──── NOISE OVERLAY ──── */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 999; opacity: .4;
+}
+
+/* ──── NAV ──── */
+nav {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(10,12,15,0.85);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 32px; height: 62px;
+}
+.logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.25rem; letter-spacing: -0.5px; }
+.logo span { color: var(--accent); }
+.nav-links { display: flex; gap: 6px; }
+.nav-links button {
+  background: none; border: none; color: var(--text-secondary);
+  font-family: 'IBM Plex Mono', monospace; font-size: .82rem;
+  padding: 7px 14px; border-radius: 6px; cursor: pointer;
+  transition: all .2s;
+}
+.nav-links button:hover, .nav-links button.active {
+  background: var(--accent-dim); color: var(--accent);
+}
+.nav-live {
+  display: flex; align-items: center; gap: 10px;
+  font-size: .75rem; color: var(--text-muted);
+}
+.dot-live { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+/* ──── SECTIONS (hidden by default) ──── */
+.section { display: none; padding: 32px; max-width: 1320px; margin: 0 auto; animation: fadeIn .35s ease; }
+.section.active { display: block; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+/* ──── HERO ──── */
+.hero {
+  position: relative; border-radius: 16px; overflow: hidden;
+  background: linear-gradient(135deg, #0d1117 0%, #111820 50%, #0a0e14 100%);
+  border: 1px solid var(--border);
+  padding: 72px 48px; margin-bottom: 36px; text-align: center;
+}
+.hero::before {
+  content:''; position:absolute; inset:0;
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,212,170,.08) 0%, transparent 70%);
+  pointer-events:none;
+}
+.hero h1 { font-family:'Syne',sans-serif; font-size:2.8rem; font-weight:800; letter-spacing:-1.5px; position:relative; }
+.hero h1 span { color: var(--accent); }
+.hero p { color: var(--text-secondary); margin-top:14px; font-size:.9rem; max-width:560px; margin-left:auto; margin-right:auto; line-height:1.7; position:relative; }
+.hero-badges { display:flex; justify-content:center; gap:12px; margin-top:28px; flex-wrap:wrap; position:relative; }
+.badge {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 20px; padding: 6px 16px; font-size:.78rem; color: var(--text-secondary);
+  display:flex; align-items:center; gap:6px;
+}
+.badge .b-dot { width:6px; height:6px; border-radius:50%; }
+
+/* ──── STAT CARDS ──── */
+.stat-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:32px; }
+.stat-card {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius:10px;
+  padding: 18px 20px; transition:.2s;
+}
+.stat-card:hover { border-color: var(--accent); background: var(--bg-card-hover); }
+.stat-label { font-size:.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.8px; }
+.stat-value { font-size:1.45rem; font-weight:600; margin-top:4px; }
+.stat-change { font-size:.72rem; margin-top:4px; }
+.up { color:var(--green); } .down { color:var(--red); }
+
+/* ──── SECTION HEADERS ──── */
+.sec-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; }
+.sec-header h2 { font-family:'Syne',sans-serif; font-size:1.3rem; font-weight:700; }
+.sec-header .tag { font-size:.7rem; background:var(--accent-dim); color:var(--accent); padding:3px 10px; border-radius:12px; }
+
+/* ──── CARDS GRID ──── */
+.card-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; }
+.card {
+  background:var(--bg-card); border:1px solid var(--border); border-radius:12px;
+  padding:22px; transition:.25s; cursor:pointer;
+}
+.card:hover { border-color:var(--accent); transform:translateY(-2px); box-shadow:0 6px 24px rgba(0,0,0,.35); }
+.card-meta { font-size:.7rem; color:var(--text-muted); display:flex; gap:12px; margin-bottom:8px; }
+.card h3 { font-family:'Syne',sans-serif; font-size:1rem; font-weight:700; margin-bottom:8px; }
+.card p { font-size:.78rem; color:var(--text-secondary); line-height:1.6; }
+.card-tags { display:flex; gap:6px; margin-top:12px; flex-wrap:wrap; }
+.tag-sm { font-size:.68rem; background:rgba(88,166,255,.1); color:var(--blue); padding:3px 8px; border-radius:4px; }
+.tag-sm.green { background:rgba(63,185,80,.1); color:var(--green); }
+.tag-sm.purple { background:rgba(188,140,255,.1); color:var(--purple); }
+.tag-sm.yellow { background:rgba(230,168,23,.1); color:var(--accent2); }
+
+/* ──── TABLE ──── */
+.table-wrap { overflow-x:auto; border-radius:10px; border:1px solid var(--border); }
+table { width:100%; border-collapse:collapse; font-size:.8rem; }
+thead { background:rgba(17,20,24,.9); }
+th { text-align:left; padding:11px 14px; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:.6px; font-size:.7rem; border-bottom:1px solid var(--border); white-space:nowrap; }
+td { padding:12px 14px; border-bottom:1px solid var(--border); color:var(--text-secondary); white-space:nowrap; }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:var(--bg-card-hover); }
+.stock-name { color:var(--text-primary); font-weight:600; }
+.sector-badge { font-size:.68rem; background:rgba(88,166,255,.1); color:var(--blue); padding:2px 8px; border-radius:4px; }
+
+/* ──── SCREENER FILTERS ──── */
+.filter-bar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:22px; align-items:center; }
+.filter-bar select, .filter-bar input {
+  background:var(--bg-card); border:1px solid var(--border); color:var(--text-primary);
+  padding:8px 12px; border-radius:6px; font-family:inherit; font-size:.78rem;
+  outline:none; transition:.2s;
+}
+.filter-bar select:focus, .filter-bar input:focus { border-color:var(--accent); }
+.filter-bar select { min-width:140px; }
+.filter-label { font-size:.7rem; color:var(--text-muted); }
+
+/* ──── RATING TRACKER ──── */
+.rating-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; margin-bottom:30px; }
+.rating-card {
+  background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:20px; transition:.25s;
+}
+.rating-card:hover { border-color:var(--accent); }
+.rating-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; }
+.rating-house { font-family:'Syne',sans-serif; font-weight:700; font-size:.92rem; }
+.credibility-badge {
+  font-size:.68rem; font-weight:600; padding:3px 10px; border-radius:12px;
+}
+.cred-high { background:rgba(63,185,80,.15); color:var(--green); }
+.cred-med { background:rgba(230,168,23,.15); color:var(--accent2); }
+.cred-low { background:rgba(248,81,73,.15); color:var(--red); }
+.rating-stats { display:flex; gap:16px; }
+.r-stat { flex:1; }
+.r-stat-label { font-size:.66rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; }
+.r-stat-val { font-size:.92rem; font-weight:600; margin-top:2px; }
+.cred-bar-wrap { margin-top:14px; }
+.cred-bar-bg { background:var(--border); border-radius:4px; height:5px; margin-top:5px; overflow:hidden; }
+.cred-bar { height:100%; border-radius:4px; transition:width .6s ease; }
+.cred-bar.high { background:var(--green); }
+.cred-bar.med { background:var(--accent2); }
+.cred-bar.low { background:var(--red); }
+
+/* ──── MINI CHART (SVG sparkline) ──── */
+.sparkline { display:block; }
+
+/* ──── TABS ──── */
+.tabs { display:flex; gap:4px; margin-bottom:20px; background:var(--bg-card); border-radius:8px; padding:4px; width:fit-content; }
+.tabs button {
+  background:none; border:none; color:var(--text-muted);
+  padding:6px 16px; border-radius:6px; font-family:inherit; font-size:.78rem; cursor:pointer; transition:.2s;
+}
+.tabs button.active { background:var(--bg-card-hover); color:var(--text-primary); }
+
+/* ──── FOOTER ──── */
+footer {
+  border-top:1px solid var(--border); text-align:center;
+  padding:24px; margin-top:40px; color:var(--text-muted); font-size:.72rem;
+}
+
+/* ──── SCROLLBAR ──── */
+::-webkit-scrollbar { width:6px; }
+::-webkit-scrollbar-track { background:var(--bg-deep); }
+::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">Zeroh<span>edge</span>Quant</div>
+  <div class="nav-links">
+    <button class="active" onclick="showSection('home')">Home</button>
+    <button onclick="showSection('learning')">Learning Hub</button>
+    <button onclick="showSection('market')">Market Analysis</button>
+    <button onclick="showSection('screener')">Screener</button>
+    <button onclick="showSection('ratings')">Rating Tracker</button>
+  </div>
+  <div class="nav-live"><div class="dot-live"></div> NSE Live</div>
+</nav>
+
+<!-- ════════ HOME ════════ -->
+<div id="home" class="section active">
+  <div class="hero">
+    <h1>Master the <span>Quant Edge</span></h1>
+    <p>A one-stop platform for quantitative learning, deep market analysis, advanced stock screening and brokerage credibility tracking — built for the Indian capital market.</p>
+    <div class="hero-badges">
+      <div class="badge"><div class="b-dot" style="background:var(--green)"></div> Live Indian Market</div>
+      <div class="badge"><div class="b-dot" style="background:var(--blue)"></div> Quant Learning</div>
+      <div class="badge"><div class="b-dot" style="background:var(--purple)"></div> Advanced Screener</div>
+      <div class="badge"><div class="b-dot" style="background:var(--accent2)"></div> Rating Tracker</div>
+    </div>
+  </div>
+
+  <!-- Market snapshot stats -->
+  <div class="stat-row">
+    <div class="stat-card">
+      <div class="stat-label">Nifty 50</div>
+      <div class="stat-value">23,412.80</div>
+      <div class="stat-change up">▲ 1.24% (+286.4)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Sensex</div>
+      <div class="stat-value">76,891.35</div>
+      <div class="stat-change up">▲ 0.98% (+749.2)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Bank Nifty</div>
+      <div class="stat-value">48,204.60</div>
+      <div class="stat-change down">▼ 0.34% (-164.1)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">VIX</div>
+      <div class="stat-value">13.42</div>
+      <div class="stat-change up">▲ 0.82</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">USD/INR</div>
+      <div class="stat-value">83.47</div>
+      <div class="stat-change down">▼ 0.12</div>
+    </div>
+  </div>
+
+  <!-- Quick links -->
+  <div class="sec-header"><h2>Quick Access</h2></div>
+  <div class="card-grid">
+    <div class="card" onclick="showSection('learning')">
+      <div class="card-meta">📚 Learning Hub</div>
+      <h3>Start Your Quant Journey</h3>
+      <p>From basics of statistics to advanced algo strategies — structured learning for every level.</p>
+      <div class="card-tags"><span class="tag-sm green">Beginner Friendly</span><span class="tag-sm">12 Articles</span></div>
+    </div>
+    <div class="card" onclick="showSection('market')">
+      <div class="card-meta">📊 Market Analysis</div>
+      <h3>Indian Capital Market Deep Dive</h3>
+      <p>Screener-style workflow to analyse sectors, technicals, and fundamentals in one place.</p>
+      <div class="card-tags"><span class="tag-sm purple">NSE / BSE</span><span class="tag-sm yellow">Live Workflow</span></div>
+    </div>
+    <div class="card" onclick="showSection('screener')">
+      <div class="card-meta">🔍 Stock Screener</div>
+      <h3>Next-Level Stock Screening</h3>
+      <p>Multi-filter screener: P/E, ROE, Market Cap, Volume, 52-week range and more.</p>
+      <div class="card-tags"><span class="tag-sm">Multi-Filter</span><span class="tag-sm green">500+ Stocks</span></div>
+    </div>
+    <div class="card" onclick="showSection('ratings')">
+      <div class="card-meta">🏦 Rating Tracker</div>
+      <h3>Brokerage Credibility Tracker</h3>
+      <p>Track target prices from top brokerages and see which houses are truly reliable over time.</p>
+      <div class="card-tags"><span class="tag-sm yellow">Credibility Score</span><span class="tag-sm purple">15+ Houses</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ LEARNING HUB ════════ -->
+<div id="learning" class="section">
+  <div class="sec-header"><h2>Learning Hub</h2><span class="tag">Blog & Tutorials</span></div>
+
+  <div class="tabs">
+    <button class="active">All</button>
+    <button>Beginner</button>
+    <button>Intermediate</button>
+    <button>Advanced</button>
+  </div>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-meta"><span>📅 Jan 28, 2025</span><span>• 8 min read</span></div>
+      <h3>What is Quantitative Finance? A Beginner's Guide</h3>
+      <p>Understand the fundamentals of quant finance — from basic probability to how hedge funds use math to trade markets.</p>
+      <div class="card-tags"><span class="tag-sm green">Beginner</span><span class="tag-sm">Fundamentals</span></div>
+    </div>
+    <div class="card">
+      <div class="card-meta"><span>📅 Jan 24, 2025</span><span>• 12 min read</span></div>
+      <h3>Understanding P/E, EV/EBITDA & Key Valuation Ratios</h3>
+      <p>A deep dive into the most important valuation metrics used by analysts and how to interpret them for Indian stocks.</p>
+      <div class="card-tags"><span class="tag-sm green">Beginner</span><span class="tag-sm">Valuation</span></div>
+    </div>
+    <div class="card">
+      <div class="card-meta"><span>📅 Jan 20, 2025</span><span>• 15 min read</span></div>
+      <h3>Building a Simple Moving Average Strategy in Python</h3>
+      <p>Step-by-step tutorial: fetch NSE data, calculate SMA crossovers, backtest, and evaluate returns.</p>
+      <div class="card-tags"><span class="tag-sm">Intermediate</span><span class="tag-sm purple">Python</span><span class="tag-sm">Algo</span></div>
+    </div>
+    <div class="card">
+      <div class="card-meta"><span>📅 Jan 15, 2025</span><span>• 10 min read</span></div>
+      <h3>How to Read a Stock's Balance Sheet</h3>
+      <p>Break down assets, liabilities, and equity. Learn to spot red flags and strong fundamentals.</p>
+      <div class="card-tags"><span class="tag-sm green">Beginner</span><span class="tag-sm">Fundamentals</span></div>
+    </div>
+    <div class="card">
+      <div class="card-meta"><span>📅 Jan 10, 2025</span><span>• 18 min read</span></div>
+      <h3>Mean Reversion vs Momentum: Which Strategy Works in India?</h3>
+      <p>Compare two of the most popular quant strategies with real backtested data from Nifty stocks.</p>
+      <div class="card-tags"><span class="tag-sm">Intermediate</span><span class="tag-sm yellow">Strategy</span></div>
+    </div>
+    <div class="card">
+      <div class="card-meta"><span>📅 Jan 05, 2025</span><span>• 22 min read</span></div>
+      <h3>Statistical Arbitrage: Pairs Trading on Indian Markets</h3>
+      <p>An advanced look at co-integration, spread analysis, and building a live pairs trading bot.</p>
+      <div class="card-tags"><span class="tag-sm">Advanced</span><span class="tag-sm purple">Algo</span><span class="tag-sm">Stats</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ MARKET ANALYSIS ════════ -->
+<div id="market" class="section">
+  <div class="sec-header"><h2>Market Analysis</h2><span class="tag">Screener Workflow</span></div>
+
+  <div class="stat-row" style="margin-bottom:24px;">
+    <div class="stat-card">
+      <div class="stat-label">Advances</div>
+      <div class="stat-value up">1,248</div>
+      <div class="stat-change" style="color:var(--text-muted)">Gainers today</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Declines</div>
+      <div class="stat-value down">682</div>
+      <div class="stat-change" style="color:var(--text-muted)">Losers today</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Unchanged</div>
+      <div class="stat-value" style="color:var(--text-muted)">134</div>
+      <div class="stat-change" style="color:var(--text-muted)">Flat today</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Top Sector</div>
+      <div class="stat-value" style="color:var(--blue)">IT</div>
+      <div class="stat-change up">▲ 2.41%</div>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <span class="filter-label">Sector:</span>
+    <select><option>All Sectors</option><option>IT</option><option>Banking</option><option>FMCG</option><option>Pharma</option><option>Auto</option><option>Realty</option><option>Energy</option></select>
+    <span class="filter-label">Sort:</span>
+    <select><option>% Change</option><option>Volume</option><option>Market Cap</option><option>Price</option></select>
+    <span class="filter-label">Exchange:</span>
+    <select><option>NSE + BSE</option><option>NSE</option><option>BSE</option></select>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th><th>Stock</th><th>Sector</th><th>Price ₹</th><th>Change</th><th>% Change</th><th>Volume</th><th>Mkt Cap (Cr)</th><th>Trend 7D</th>
+        </tr>
+      </thead>
+      <tbody id="market-table"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════════ STOCK SCREENER ════════ -->
+<div id="screener" class="section">
+  <div class="sec-header"><h2>Advanced Stock Screener</h2><span class="tag">Multi-Filter</span></div>
+
+  <div class="filter-bar" style="background:var(--bg-card);padding:16px;border-radius:10px;border:1px solid var(--border);margin-bottom:22px;">
+    <span class="filter-label">Sector:</span>
+    <select><option>All</option><option>IT</option><option>Banking</option><option>FMCG</option><option>Pharma</option><option>Auto</option><option>Realty</option><option>Energy</option></select>
+    <span class="filter-label">Market Cap:</span>
+    <select><option>All</option><option>Large Cap (>20K Cr)</option><option>Mid Cap (2K-20K)</option><option>Small Cap (<2K Cr)</option></select>
+    <span class="filter-label">P/E Ratio:</span>
+    <select><option>All</option><option>< 15</option><option>15-30</option><option>30-50</option><option>> 50</option></select>
+    <span class="filter-label">ROE:</span>
+    <select><option>All</option><option>> 20%</option><option>> 15%</option><option>> 10%</option></select>
+    <span class="filter-label">52W:</span>
+    <select><option>All</option><option>Near 52W High</option><option>Near 52W Low</option></select>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th><th>Stock</th><th>Sector</th><th>Price ₹</th><th>P/E</th><th>ROE %</th><th>Mkt Cap (Cr)</th><th>52W High</th><th>52W Low</th><th>Debt/Eq</th><th>Div Yield %</th>
+        </tr>
+      </thead>
+      <tbody id="screener-table"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════════ RATING TRACKER ════════ -->
+<div id="ratings" class="section">
+  <div class="sec-header"><h2>Brokerage Rating Tracker</h2><span class="tag">Credibility Analysis</span></div>
+
+  <div class="tabs">
+    <button class="active">All Houses</button>
+    <button>High Credibility</button>
+    <button>Target Hits</button>
+  </div>
+
+  <div class="rating-grid" id="rating-grid"></div>
+
+  <!-- Detailed target tracking table -->
+  <div class="sec-header" style="margin-top:32px;"><h2>Recent Target Prices</h2><span class="tag">Last 30 Days</span></div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Brokerage</th><th>Stock</th><th>Rating</th><th>Target ₹</th><th>CMP ₹</th><th>Upside %</th><th>Given On</th><th>Status</th></tr>
+      </thead>
+      <tbody id="target-table"></tbody>
+    </table>
+  </div>
+</div>
+
+<footer>© 2025 ZerohedgeQuant — Built for the Indian Quant Community. Data is illustrative. Do your own research before investing.</footer>
+
+<!-- ──── SCRIPT ──── -->
+<script>
+// ─── Navigation ───
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-links button').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  [...document.querySelectorAll('.nav-links button')].find(b => b.textContent.toLowerCase().includes(id === 'home' ? 'home' : id === 'learning' ? 'learn' : id === 'market' ? 'market' : id === 'screener' ? 'screen' : 'rating'))?.classList.add('active');
+}
+
+// ─── Tab switching (visual only) ───
+document.querySelectorAll('.tabs').forEach(tabGroup => {
+  tabGroup.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      tabGroup.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+});
+
+// ─── Market Data ───
+const marketData = [
+  { name:"Tata Consultancy", sector:"IT", price:3842.50, change:78.3, pct:2.08, vol:"42.1M", cap:"1,41,234", spark:[1,2,1.5,3,2,4,3.5] },
+  { name:"Infosys", sector:"IT", price:1724.80, change:31.2, pct:1.84, vol:"28.7M", cap:"72,418", spark:[2,1,2.5,3,2,3.5,4] },
+  { name:"HDFC Bank", sector:"Banking", price:1748.20, change:-12.4, pct:-0.71, vol:"35.2M", cap:"1,33,890", spark:[3,2.5,2,1.5,2,1.8,2] },
+  { name:"Reliance Ind.", sector:"Energy", price:2891.40, change:24.8, pct:0.87, vol:"51.4M", cap:"1,95,102", spark:[1,2,1.8,2.5,3,2.8,3.2] },
+  { name:"ICICI Bank", sector:"Banking", price:882.65, change:-4.2, pct:-0.47, vol:"44.8M", cap:"62,340", spark:[2.5,2,1.8,1.5,2,1.6,1.7] },
+  { name:"Hindustan Unilever", sector:"FMCG", price:2234.10, change:18.7, pct:0.84, vol:"12.3M", cap:"52,768", spark:[1.5,2,2.2,2.5,2.8,3,3.2] },
+  { name:"Sun Pharma", sector:"Pharma", price:1562.30, change:42.1, pct:2.77, vol:"19.8M", cap:"37,486", spark:[1,1.5,2,2.8,3,3.5,4] },
+  { name:"Maruti Suzuki", sector:"Auto", price:11248.00, change:-89.5, pct:-0.79, vol:"8.2M", cap:"33,744", spark:[3,2.5,2,1.8,1.5,1.6,1.4] },
+  { name:"DLF Ltd", sector:"Realty", price:856.40, change:22.3, pct:2.68, vol:"15.6M", cap:"19,082", spark:[1,1.8,2.2,3,2.8,3.5,4] },
+  { name:"NTPC Ltd", sector:"Energy", price:384.20, change:5.8, pct:1.53, vol:"32.1M", cap:"37,264", spark:[2,2.2,2.5,2.8,3,2.9,3.1] },
+];
+
+function sparkSVG(data, up) {
+  const w=60, h=22, pts=data.length, step=w/(pts-1);
+  const max=Math.max(...data), min=Math.min(...data), range=max-min||1;
+  let d = data.map((v,i) => `${i*step},${h-((v-min)/range)*h}`).join(' ');
+  const color = up ? 'var(--green)' : 'var(--red)';
+  return `<svg class="sparkline" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+    <polyline fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" points="${d}"/>
+    <circle cx="${(pts-1)*step}" cy="${h-((data[pts-1]-min)/range)*h}" r="2.2" fill="${color}"/>
+  </svg>`;
+}
+
+function renderMarket() {
+  const tbody = document.getElementById('market-table');
+  tbody.innerHTML = marketData.map((s,i) => `
+    <tr>
+      <td style="color:var(--text-muted)">${i+1}</td>
+      <td><span class="stock-name">${s.name}</span></td>
+      <td><span class="sector-badge">${s.sector}</span></td>
+      <td style="color:var(--text-primary);font-weight:600">₹${s.price.toLocaleString()}</td>
+      <td class="${s.change>=0?'up':'down'}">${s.change>=0?'+':''}${s.change}</td>
+      <td class="${s.pct>=0?'up':'down'}">${s.pct>=0?'+':''}${s.pct}%</td>
+      <td>${s.vol}</td>
+      <td>${s.cap}</td>
+      <td>${sparkSVG(s.spark, s.pct>=0)}</td>
+    </tr>
+  `).join('');
+}
+
+// ─── Screener Data ───
+const screenerData = [
+  { name:"Tata Consultancy", sector:"IT", price:3842.50, pe:28.4, roe:24.8, cap:"1,41,234", hi:4100, lo:3200, de:0.02, div:1.72 },
+  { name:"HDFC Bank", sector:"Banking", price:1748.20, pe:22.1, roe:18.2, cap:"1,33,890", hi:1920, lo:1480, de:0.14, div:1.42 },
+  { name:"Reliance Ind.", sector:"Energy", price:2891.40, pe:24.8, roe:14.6, cap:"1,95,102", hi:3100, lo:2280, de:0.21, div:0.87 },
+  { name:"Infosys", sector:"IT", price:1724.80, pe:25.6, roe:28.4, cap:"72,418", hi:1880, lo:1380, de:0.01, div:2.14 },
+  { name:"Sun Pharma", sector:"Pharma", price:1562.30, pe:34.2, roe:16.8, cap:"37,486", hi:1680, lo:1120, de:0.18, div:0.62 },
+  { name:"ICICI Bank", sector:"Banking", price:882.65, pe:19.4, roe:17.6, cap:"62,340", hi:980, lo:720, de:0.11, div:1.88 },
+  { name:"HUL", sector:"FMCG", price:2234.10, pe:48.6, roe:20.2, cap:"52,768", hi:2480, lo:1880, de:0.08, div:2.48 },
+  { name:"Maruti Suzuki", sector:"Auto", price:11248.00, pe:26.3, roe:19.4, cap:"33,744", hi:12200, lo:9800, de:0.04, div:1.34 },
+  { name:"DLF Ltd", sector:"Realty", price:856.40, pe:38.1, roe:22.6, cap:"19,082", hi:950, lo:580, de:0.32, div:0.44 },
+  { name:"NTPC Ltd", sector:"Energy", price:384.20, pe:16.8, roe:12.4, cap:"37,264", hi:420, lo:280, de:0.45, div:3.12 },
+  { name:"Bajaj Finance", sector:"Banking", price:7842.00, pe:29.4, roe:21.8, cap:"48,820", hi:8400, lo:6200, de:0.72, div:1.06 },
+  { name:"Asian Paints", sector:"FMCG", price:2648.30, pe:52.4, roe:26.8, cap:"25,366", hi:2900, lo:2100, de:0.06, div:1.82 },
+];
+
+function renderScreener() {
+  const tbody = document.getElementById('screener-table');
+  tbody.innerHTML = screenerData.map((s,i) => `
+    <tr>
+      <td style="color:var(--text-muted)">${i+1}</td>
+      <td><span class="stock-name">${s.name}</span></td>
+      <td><span class="sector-badge">${s.sector}</span></td>
+      <td style="color:var(--text-primary);font-weight:600">₹${s.price.toLocaleString()}</td>
+      <td>${s.pe}</td>
+      <td class="${s.roe>=18?'up':''}">  ${s.roe}%</td>
+      <td>${s.cap}</td>
+      <td>₹${s.hi.toLocaleString()}</td>
+      <td>₹${s.lo.toLocaleString()}</td>
+      <td class="${s.de>0.3?'down':''}">${s.de}</td>
+      <td class="${s.div>=2?'up':''}">${s.div}%</td>
+    </tr>
+  `).join('');
+}
+
+// ─── Rating Tracker Data ───
+const brokerages = [
+  { name:"Motilal Oswal", credibility:87, hits:73, total:100, accuracy:"73%", calls:42, credLevel:"high" },
+  { name:"ICICI Direct", credibility:81, hits:65, total:80, accuracy:"81%", calls:38, credLevel:"high" },
+  { name:"Kotak Securities", credibility:76, hits:58, total:76, accuracy:"76%", calls:35, credLevel:"high" },
+  { name:"HDFC Securities", credibility:72, hits:51, total:71, accuracy:"72%", calls:30, credLevel:"med" },
+  { name:"Axis Direct", credibility:68, hits:47, total:69, accuracy:"68%", calls:28, credLevel:"med" },
+  { name:"Sharekhan", credibility:64, hits:41, total:64, accuracy:"64%", calls:25, credLevel:"med" },
+  { name:"Angel One", credibility:58, hits:34, total:58, accuracy:"58%", calls:22, credLevel:"low" },
+  { name:"Nirmal Bang", credibility:71, hits:50, total:70, accuracy:"71%", calls:27, credLevel:"med" },
+];
+
+function renderRatings() {
+  const grid = document.getElementById('rating-grid');
+  grid.innerHTML = brokerages.map(b => `
+    <div class="rating-card">
+      <div class="rating-header">
+        <div class="rating-house">${b.name}</div>
+        <span class="credibility-badge cred-${b.credLevel}">${b.credLevel === 'high' ? '★ High' : b.credLevel === 'med' ? '◆ Medium' : '● Low'} Credibility</span>
+      </div>
+      <div class="rating-stats">
+        <div class="r-stat"><div class="r-stat-label">Accuracy</div><div class="r-stat-val ${b.credLevel === 'high' ? 'up' : b.credLevel === 'med' ? '' : 'down'}">${b.accuracy}</div></div>
+        <div class="r-stat"><div class="r-stat-label">Targets Hit</div><div class="r-stat-val">${b.hits}/${b.total}</div></div>
+        <div class="r-stat"><div class="r-stat-label">Active Calls</div><div class="r-stat-val">${b.calls}</div></div>
+      </div>
+      <div class="cred-bar-wrap">
+        <div style="font-size:.68rem;color:var(--text-muted)">Credibility Score: <strong style="color:var(--text-primary)">${b.credibility}/100</strong></div>
+        <div class="cred-bar-bg"><div class="cred-bar ${b.credLevel}" style="width:${b.credibility}%"></div></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+const targetData = [
+  { house:"Motilal Oswal", stock:"TCS", rating:"BUY", target:4100, cmp:3842, date:"Jan 28", status:"Open", statusClass:"up" },
+  { house:"ICICI Direct", stock:"Infosys", rating:"BUY", target:1880, cmp:1724, date:"Jan 26", status:"Open", statusClass:"up" },
+  { house:"Kotak Securities", stock:"HDFC Bank", rating:"HOLD", target:1780, cmp:1748, date:"Jan 24", status:"Open", statusClass:"" },
+  { house:"Motilal Oswal", stock:"Sun Pharma", rating:"BUY", target:1680, cmp:1562, date:"Jan 22", status:"Open", statusClass:"up" },
+  { house:"Sharekhan", stock:"Reliance", rating:"SELL", target:2700, cmp:2891, date:"Jan 20", status:"❌ Miss", statusClass:"down" },
+  { house:"HDFC Securities", stock:"DLF", rating:"BUY", target:920, cmp:856, date:"Jan 18", status:"Open", statusClass:"up" },
+  { house:"Angel One", stock:"NTPC", rating:"BUY", target:410, cmp:384, date:"Jan 15", status:"Open", statusClass:"up" },
+  { house:"Axis Direct", stock:"Maruti", rating:"HOLD", target:11400, cmp:11248, date:"Jan 12", status:"✅ Hit", statusClass:"up" },
+  { house:"Nirmal Bang", stock:"HUL", rating:"BUY", target:2400, cmp:2234, date:"Jan 10", status:"Open", statusClass:"up" },
+  { house:"ICICI Direct", stock:"ICICI Bank", rating:"BUY", target:950, cmp:882, date:"Jan 08", status:"Open", statusClass:"up" },
+];
+
+function renderTargets() {
+  const tbody = document.getElementById('target-table');
+  tbody.innerHTML = targetData.map(t => {
+    const upside = (((t.target - t.cmp) / t.cmp) * 100).toFixed(1);
+    return `<tr>
+      <td style="font-weight:600;color:var(--text-primary)">${t.house}</td>
+      <td class="stock-name">${t.stock}</td>
+      <td><span style="color:${t.rating==='BUY'?'var(--green)':t.rating==='SELL'?'var(--red)':'var(--accent2)'};font-weight:600">${t.rating}</span></td>
+      <td style="color:var(--text-primary);font-weight:600">₹${t.target.toLocaleString()}</td>
+      <td>₹${t.cmp.toLocaleString()}</td>
+      <td class="${upside>0?'up':'down'}">${upside>0?'+':''}${upside}%</td>
+      <td style="color:var(--text-muted)">${t.date}</td>
+      <td class="${t.statusClass}">${t.status}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── Init ───
+renderMarket();
+renderScreener();
+renderRatings();
+renderTargets();
+</script>
+</body>
+</html>
