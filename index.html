@@ -193,6 +193,9 @@ footer {
   padding:24px; margin-top:40px; color:var(--text-muted); font-size:.72rem;
 }
 
+/* ──── LOADING INDICATOR ──── */
+.loading { text-align:center; padding:40px; color:var(--text-muted); }
+
 /* ──── SCROLLBAR ──── */
 ::-webkit-scrollbar { width:6px; }
 ::-webkit-scrollbar-track { background:var(--bg-deep); }
@@ -211,7 +214,7 @@ footer {
     <button onclick="showSection('screener')">Screener</button>
     <button onclick="showSection('ratings')">Rating Tracker</button>
   </div>
-  <div class="nav-live"><div class="dot-live"></div> NSE Live</div>
+  <div class="nav-live"><div class="dot-live"></div> LIVE via Upstox</div>
 </nav>
 
 <!-- ════════ HOME ════════ -->
@@ -228,32 +231,8 @@ footer {
   </div>
 
   <!-- Market snapshot stats -->
-  <div class="stat-row">
-    <div class="stat-card">
-      <div class="stat-label">Nifty 50</div>
-      <div class="stat-value">23,412.80</div>
-      <div class="stat-change up">▲ 1.24% (+286.4)</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Sensex</div>
-      <div class="stat-value">76,891.35</div>
-      <div class="stat-change up">▲ 0.98% (+749.2)</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Bank Nifty</div>
-      <div class="stat-value">48,204.60</div>
-      <div class="stat-change down">▼ 0.34% (-164.1)</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">VIX</div>
-      <div class="stat-value">13.42</div>
-      <div class="stat-change up">▲ 0.82</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">USD/INR</div>
-      <div class="stat-value">83.47</div>
-      <div class="stat-change down">▼ 0.12</div>
-    </div>
+  <div class="stat-row" id="index-stats">
+    <div class="loading">Loading live market data...</div>
   </div>
 
   <!-- Quick links -->
@@ -380,7 +359,7 @@ footer {
           <th>#</th><th>Stock</th><th>Sector</th><th>Price ₹</th><th>Change</th><th>% Change</th><th>Volume</th><th>Mkt Cap (Cr)</th><th>Trend 7D</th>
         </tr>
       </thead>
-      <tbody id="market-table"></tbody>
+      <tbody id="market-table"><tr><td colspan="9" class="loading">Loading live market data...</td></tr></tbody>
     </table>
   </div>
 </div>
@@ -409,7 +388,7 @@ footer {
           <th>#</th><th>Stock</th><th>Sector</th><th>Price ₹</th><th>P/E</th><th>ROE %</th><th>Mkt Cap (Cr)</th><th>52W High</th><th>52W Low</th><th>Debt/Eq</th><th>Div Yield %</th>
         </tr>
       </thead>
-      <tbody id="screener-table"></tbody>
+      <tbody id="screener-table"><tr><td colspan="11" class="loading">Loading screener data...</td></tr></tbody>
     </table>
   </div>
 </div>
@@ -438,10 +417,15 @@ footer {
   </div>
 </div>
 
-<footer>© 2025 ZerohedgeQuant — Built for the Indian Quant Community. Data is illustrative. Do your own research before investing.</footer>
+<footer>© 2025 ZerohedgeQuant — Built for the Indian Quant Community. Live data powered by Upstox API. Do your own research before investing.</footer>
 
 <!-- ──── SCRIPT ──── -->
 <script>
+// ═══════════════════════════════════════════════════════
+// BACKEND API CONFIG - UPDATE THIS WITH YOUR DEPLOYED BACKEND URL
+// ═══════════════════════════════════════════════════════
+const API_URL = 'https://zerohedgequant-backend.onrender.com'; // Your live backend!
+
 // ─── Navigation ───
 function showSection(id) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -450,7 +434,7 @@ function showSection(id) {
   [...document.querySelectorAll('.nav-links button')].find(b => b.textContent.toLowerCase().includes(id === 'home' ? 'home' : id === 'learning' ? 'learn' : id === 'market' ? 'market' : id === 'screener' ? 'screen' : 'rating'))?.classList.add('active');
 }
 
-// ─── Tab switching (visual only) ───
+// ─── Tab switching ───
 document.querySelectorAll('.tabs').forEach(tabGroup => {
   tabGroup.querySelectorAll('button').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -460,19 +444,119 @@ document.querySelectorAll('.tabs').forEach(tabGroup => {
   });
 });
 
-// ─── Market Data ───
-const marketData = [
-  { name:"Tata Consultancy", sector:"IT", price:3842.50, change:78.3, pct:2.08, vol:"42.1M", cap:"1,41,234", spark:[1,2,1.5,3,2,4,3.5] },
-  { name:"Infosys", sector:"IT", price:1724.80, change:31.2, pct:1.84, vol:"28.7M", cap:"72,418", spark:[2,1,2.5,3,2,3.5,4] },
-  { name:"HDFC Bank", sector:"Banking", price:1748.20, change:-12.4, pct:-0.71, vol:"35.2M", cap:"1,33,890", spark:[3,2.5,2,1.5,2,1.8,2] },
-  { name:"Reliance Ind.", sector:"Energy", price:2891.40, change:24.8, pct:0.87, vol:"51.4M", cap:"1,95,102", spark:[1,2,1.8,2.5,3,2.8,3.2] },
-  { name:"ICICI Bank", sector:"Banking", price:882.65, change:-4.2, pct:-0.47, vol:"44.8M", cap:"62,340", spark:[2.5,2,1.8,1.5,2,1.6,1.7] },
-  { name:"Hindustan Unilever", sector:"FMCG", price:2234.10, change:18.7, pct:0.84, vol:"12.3M", cap:"52,768", spark:[1.5,2,2.2,2.5,2.8,3,3.2] },
-  { name:"Sun Pharma", sector:"Pharma", price:1562.30, change:42.1, pct:2.77, vol:"19.8M", cap:"37,486", spark:[1,1.5,2,2.8,3,3.5,4] },
-  { name:"Maruti Suzuki", sector:"Auto", price:11248.00, change:-89.5, pct:-0.79, vol:"8.2M", cap:"33,744", spark:[3,2.5,2,1.8,1.5,1.6,1.4] },
-  { name:"DLF Ltd", sector:"Realty", price:856.40, change:22.3, pct:2.68, vol:"15.6M", cap:"19,082", spark:[1,1.8,2.2,3,2.8,3.5,4] },
-  { name:"NTPC Ltd", sector:"Energy", price:384.20, change:5.8, pct:1.53, vol:"32.1M", cap:"37,264", spark:[2,2.2,2.5,2.8,3,2.9,3.1] },
-];
+// ═══════════════════════════════════════════════════════
+// FETCH LIVE DATA FROM BACKEND
+// ═══════════════════════════════════════════════════════
+
+// Fetch and render indices (Nifty, Sensex, etc)
+async function fetchIndices() {
+  try {
+    const response = await fetch(`${API_URL}/api/indices`);
+    const result = await response.json();
+    
+    if (result.success && result.data) {
+      const { nifty, sensex, banknifty } = result.data;
+      
+      document.getElementById('index-stats').innerHTML = `
+        <div class="stat-card">
+          <div class="stat-label">Nifty 50</div>
+          <div class="stat-value">${nifty?.value || '---'}</div>
+          <div class="stat-change ${nifty?.pct >= 0 ? 'up' : 'down'}">${nifty?.pct >= 0 ? '▲' : '▼'} ${Math.abs(nifty?.pct || 0)}% (${nifty?.change >= 0 ? '+' : ''}${nifty?.change || 0})</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Sensex</div>
+          <div class="stat-value">${sensex?.value || '---'}</div>
+          <div class="stat-change ${sensex?.pct >= 0 ? 'up' : 'down'}">${sensex?.pct >= 0 ? '▲' : '▼'} ${Math.abs(sensex?.pct || 0)}% (${sensex?.change >= 0 ? '+' : ''}${sensex?.change || 0})</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Bank Nifty</div>
+          <div class="stat-value">${banknifty?.value || '---'}</div>
+          <div class="stat-change ${banknifty?.pct >= 0 ? 'up' : 'down'}">${banknifty?.pct >= 0 ? '▲' : '▼'} ${Math.abs(banknifty?.pct || 0)}% (${banknifty?.change >= 0 ? '+' : ''}${banknifty?.change || 0})</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Data Source</div>
+          <div class="stat-value" style="font-size:1rem;color:var(--accent)">Upstox Live</div>
+          <div class="stat-change" style="color:var(--text-muted)">Real-time data</div>
+        </div>
+      `;
+    }
+  } catch (error) {
+    console.error('Error fetching indices:', error);
+    document.getElementById('index-stats').innerHTML = `
+      <div class="stat-card">
+        <div class="stat-label">Error</div>
+        <div class="stat-value" style="font-size:0.9rem;color:var(--red)">Unable to fetch live data</div>
+        <div class="stat-change" style="color:var(--text-muted)">Check if backend is running</div>
+      </div>
+    `;
+  }
+}
+
+// Fetch and render market table
+async function fetchMarketData() {
+  try {
+    const response = await fetch(`${API_URL}/api/market-data`);
+    const result = await response.json();
+    
+    if (result.success && result.data) {
+      const tbody = document.getElementById('market-table');
+      tbody.innerHTML = result.data.map((s, i) => `
+        <tr>
+          <td style="color:var(--text-muted)">${i+1}</td>
+          <td><span class="stock-name">${s.name}</span></td>
+          <td><span class="sector-badge">${s.sector}</span></td>
+          <td style="color:var(--text-primary);font-weight:600">₹${parseFloat(s.price).toLocaleString()}</td>
+          <td class="${s.change >= 0 ? 'up' : 'down'}">${s.change >= 0 ? '+' : ''}${s.change}</td>
+          <td class="${s.pct >= 0 ? 'up' : 'down'}">${s.pct >= 0 ? '+' : ''}${s.pct}%</td>
+          <td>${s.vol}</td>
+          <td>${s.cap}</td>
+          <td>${sparkSVG(s.spark, s.pct >= 0)}</td>
+        </tr>
+      `).join('');
+    }
+  } catch (error) {
+    console.error('Error fetching market data:', error);
+    document.getElementById('market-table').innerHTML = `
+      <tr><td colspan="9" style="color:var(--red);text-align:center;padding:20px;">Failed to load market data. Make sure backend is running.</td></tr>
+    `;
+  }
+}
+
+// Fetch and render screener data
+async function fetchScreenerData() {
+  try {
+    const response = await fetch(`${API_URL}/api/screener`);
+    const result = await response.json();
+    
+    if (result.success && result.data) {
+      const tbody = document.getElementById('screener-table');
+      tbody.innerHTML = result.data.map((s, i) => `
+        <tr>
+          <td style="color:var(--text-muted)">${i+1}</td>
+          <td><span class="stock-name">${s.name}</span></td>
+          <td><span class="sector-badge">${s.sector}</span></td>
+          <td style="color:var(--text-primary);font-weight:600">₹${parseFloat(s.price).toLocaleString()}</td>
+          <td>${s.pe}</td>
+          <td class="${s.roe >= 18 ? 'up' : ''}">${s.roe}%</td>
+          <td>${s.cap}</td>
+          <td>₹${parseFloat(s.hi).toLocaleString()}</td>
+          <td>₹${parseFloat(s.lo).toLocaleString()}</td>
+          <td class="${s.de > 0.3 ? 'down' : ''}">${s.de}</td>
+          <td class="${s.div >= 2 ? 'up' : ''}">${s.div}%</td>
+        </tr>
+      `).join('');
+    }
+  } catch (error) {
+    console.error('Error fetching screener data:', error);
+    document.getElementById('screener-table').innerHTML = `
+      <tr><td colspan="11" style="color:var(--red);text-align:center;padding:20px;">Failed to load screener data.</td></tr>
+    `;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// HELPER FUNCTIONS
+// ═══════════════════════════════════════════════════════
 
 function sparkSVG(data, up) {
   const w=60, h=22, pts=data.length, step=w/(pts-1);
@@ -485,59 +569,10 @@ function sparkSVG(data, up) {
   </svg>`;
 }
 
-function renderMarket() {
-  const tbody = document.getElementById('market-table');
-  tbody.innerHTML = marketData.map((s,i) => `
-    <tr>
-      <td style="color:var(--text-muted)">${i+1}</td>
-      <td><span class="stock-name">${s.name}</span></td>
-      <td><span class="sector-badge">${s.sector}</span></td>
-      <td style="color:var(--text-primary);font-weight:600">₹${s.price.toLocaleString()}</td>
-      <td class="${s.change>=0?'up':'down'}">${s.change>=0?'+':''}${s.change}</td>
-      <td class="${s.pct>=0?'up':'down'}">${s.pct>=0?'+':''}${s.pct}%</td>
-      <td>${s.vol}</td>
-      <td>${s.cap}</td>
-      <td>${sparkSVG(s.spark, s.pct>=0)}</td>
-    </tr>
-  `).join('');
-}
+// ═══════════════════════════════════════════════════════
+// RATING TRACKER (Using static data for now)
+// ═══════════════════════════════════════════════════════
 
-// ─── Screener Data ───
-const screenerData = [
-  { name:"Tata Consultancy", sector:"IT", price:3842.50, pe:28.4, roe:24.8, cap:"1,41,234", hi:4100, lo:3200, de:0.02, div:1.72 },
-  { name:"HDFC Bank", sector:"Banking", price:1748.20, pe:22.1, roe:18.2, cap:"1,33,890", hi:1920, lo:1480, de:0.14, div:1.42 },
-  { name:"Reliance Ind.", sector:"Energy", price:2891.40, pe:24.8, roe:14.6, cap:"1,95,102", hi:3100, lo:2280, de:0.21, div:0.87 },
-  { name:"Infosys", sector:"IT", price:1724.80, pe:25.6, roe:28.4, cap:"72,418", hi:1880, lo:1380, de:0.01, div:2.14 },
-  { name:"Sun Pharma", sector:"Pharma", price:1562.30, pe:34.2, roe:16.8, cap:"37,486", hi:1680, lo:1120, de:0.18, div:0.62 },
-  { name:"ICICI Bank", sector:"Banking", price:882.65, pe:19.4, roe:17.6, cap:"62,340", hi:980, lo:720, de:0.11, div:1.88 },
-  { name:"HUL", sector:"FMCG", price:2234.10, pe:48.6, roe:20.2, cap:"52,768", hi:2480, lo:1880, de:0.08, div:2.48 },
-  { name:"Maruti Suzuki", sector:"Auto", price:11248.00, pe:26.3, roe:19.4, cap:"33,744", hi:12200, lo:9800, de:0.04, div:1.34 },
-  { name:"DLF Ltd", sector:"Realty", price:856.40, pe:38.1, roe:22.6, cap:"19,082", hi:950, lo:580, de:0.32, div:0.44 },
-  { name:"NTPC Ltd", sector:"Energy", price:384.20, pe:16.8, roe:12.4, cap:"37,264", hi:420, lo:280, de:0.45, div:3.12 },
-  { name:"Bajaj Finance", sector:"Banking", price:7842.00, pe:29.4, roe:21.8, cap:"48,820", hi:8400, lo:6200, de:0.72, div:1.06 },
-  { name:"Asian Paints", sector:"FMCG", price:2648.30, pe:52.4, roe:26.8, cap:"25,366", hi:2900, lo:2100, de:0.06, div:1.82 },
-];
-
-function renderScreener() {
-  const tbody = document.getElementById('screener-table');
-  tbody.innerHTML = screenerData.map((s,i) => `
-    <tr>
-      <td style="color:var(--text-muted)">${i+1}</td>
-      <td><span class="stock-name">${s.name}</span></td>
-      <td><span class="sector-badge">${s.sector}</span></td>
-      <td style="color:var(--text-primary);font-weight:600">₹${s.price.toLocaleString()}</td>
-      <td>${s.pe}</td>
-      <td class="${s.roe>=18?'up':''}">  ${s.roe}%</td>
-      <td>${s.cap}</td>
-      <td>₹${s.hi.toLocaleString()}</td>
-      <td>₹${s.lo.toLocaleString()}</td>
-      <td class="${s.de>0.3?'down':''}">${s.de}</td>
-      <td class="${s.div>=2?'up':''}">${s.div}%</td>
-    </tr>
-  `).join('');
-}
-
-// ─── Rating Tracker Data ───
 const brokerages = [
   { name:"Motilal Oswal", credibility:87, hits:73, total:100, accuracy:"73%", calls:42, credLevel:"high" },
   { name:"ICICI Direct", credibility:81, hits:65, total:80, accuracy:"81%", calls:38, credLevel:"high" },
@@ -600,11 +635,30 @@ function renderTargets() {
   }).join('');
 }
 
-// ─── Init ───
-renderMarket();
-renderScreener();
-renderRatings();
-renderTargets();
+// ═══════════════════════════════════════════════════════
+// INITIALIZE - Load all data on page load
+// ═══════════════════════════════════════════════════════
+
+async function init() {
+  // Fetch live data
+  await fetchIndices();
+  await fetchMarketData();
+  await fetchScreenerData();
+  
+  // Render static data
+  renderRatings();
+  renderTargets();
+  
+  // Auto-refresh every 30 seconds
+  setInterval(() => {
+    fetchIndices();
+    fetchMarketData();
+    fetchScreenerData();
+  }, 30000);
+}
+
+// Start everything
+init();
 </script>
 </body>
 </html>
