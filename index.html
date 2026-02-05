@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>ZerohedgeQuant</title>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Syne:wght@400;700;800&display=swap" rel="stylesheet"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZerohedgeQuant - Live Market Data</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
   --bg-deep: #0a0c0f;
@@ -23,7 +23,6 @@
   --purple: #bc8cff;
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 body {
   font-family: 'IBM Plex Mono', monospace;
   background: var(--bg-deep);
@@ -31,16 +30,12 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
 }
-
-/* ──── NOISE OVERLAY ──── */
 body::before {
   content: '';
   position: fixed; inset: 0;
   background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
   pointer-events: none; z-index: 999; opacity: .4;
 }
-
-/* ──── NAV ──── */
 nav {
   position: sticky; top: 0; z-index: 100;
   background: rgba(10,12,15,0.85);
@@ -67,388 +62,143 @@ nav {
 }
 .dot-live { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-
-/* ──── SECTIONS (hidden by default) ──── */
-.section { display: none; padding: 32px; max-width: 1320px; margin: 0 auto; animation: fadeIn .35s ease; }
+.section { display: none; padding: 32px; max-width: 1400px; margin: 0 auto; animation: fadeIn .35s ease; }
 .section.active { display: block; }
 @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-
-/* ──── HERO ──── */
 .hero {
   position: relative; border-radius: 16px; overflow: hidden;
   background: linear-gradient(135deg, #0d1117 0%, #111820 50%, #0a0e14 100%);
   border: 1px solid var(--border);
-  padding: 72px 48px; margin-bottom: 36px; text-align: center;
+  padding: 60px 48px; margin-bottom: 36px; text-align: center;
 }
 .hero::before {
   content:''; position:absolute; inset:0;
   background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,212,170,.08) 0%, transparent 70%);
   pointer-events:none;
 }
-.hero h1 { font-family:'Syne',sans-serif; font-size:2.8rem; font-weight:800; letter-spacing:-1.5px; position:relative; }
+.hero h1 { font-family:'Syne',sans-serif; font-size:2.5rem; font-weight:800; letter-spacing:-1.5px; position:relative; }
 .hero h1 span { color: var(--accent); }
-.hero p { color: var(--text-secondary); margin-top:14px; font-size:.9rem; max-width:560px; margin-left:auto; margin-right:auto; line-height:1.7; position:relative; }
-.hero-badges { display:flex; justify-content:center; gap:12px; margin-top:28px; flex-wrap:wrap; position:relative; }
-.badge {
-  background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: 20px; padding: 6px 16px; font-size:.78rem; color: var(--text-secondary);
-  display:flex; align-items:center; gap:6px;
-}
-.badge .b-dot { width:6px; height:6px; border-radius:50%; }
-
-/* ──── STAT CARDS ──── */
+.hero p { color: var(--text-secondary); margin-top:14px; font-size:.88rem; max-width:520px; margin-left:auto; margin-right:auto; line-height:1.6; position:relative; }
 .stat-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:32px; }
 .stat-card {
   background: var(--bg-card); border: 1px solid var(--border); border-radius:10px;
-  padding: 18px 20px; transition:.2s;
+  padding: 16px 18px; transition:.2s;
 }
 .stat-card:hover { border-color: var(--accent); background: var(--bg-card-hover); }
-.stat-label { font-size:.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.8px; }
-.stat-value { font-size:1.45rem; font-weight:600; margin-top:4px; }
-.stat-change { font-size:.72rem; margin-top:4px; }
+.stat-label { font-size:.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.8px; }
+.stat-value { font-size:1.35rem; font-weight:600; margin-top:4px; }
+.stat-change { font-size:.7rem; margin-top:4px; }
 .up { color:var(--green); } .down { color:var(--red); }
-
-/* ──── SECTION HEADERS ──── */
-.sec-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; }
-.sec-header h2 { font-family:'Syne',sans-serif; font-size:1.3rem; font-weight:700; }
-.sec-header .tag { font-size:.7rem; background:var(--accent-dim); color:var(--accent); padding:3px 10px; border-radius:12px; }
-
-/* ──── CARDS GRID ──── */
-.card-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; }
-.card {
-  background:var(--bg-card); border:1px solid var(--border); border-radius:12px;
-  padding:22px; transition:.25s; cursor:pointer;
-}
-.card:hover { border-color:var(--accent); transform:translateY(-2px); box-shadow:0 6px 24px rgba(0,0,0,.35); }
-.card-meta { font-size:.7rem; color:var(--text-muted); display:flex; gap:12px; margin-bottom:8px; }
-.card h3 { font-family:'Syne',sans-serif; font-size:1rem; font-weight:700; margin-bottom:8px; }
-.card p { font-size:.78rem; color:var(--text-secondary); line-height:1.6; }
-.card-tags { display:flex; gap:6px; margin-top:12px; flex-wrap:wrap; }
-.tag-sm { font-size:.68rem; background:rgba(88,166,255,.1); color:var(--blue); padding:3px 8px; border-radius:4px; }
-.tag-sm.green { background:rgba(63,185,80,.1); color:var(--green); }
-.tag-sm.purple { background:rgba(188,140,255,.1); color:var(--purple); }
-.tag-sm.yellow { background:rgba(230,168,23,.1); color:var(--accent2); }
-
-/* ──── TABLE ──── */
-.table-wrap { overflow-x:auto; border-radius:10px; border:1px solid var(--border); }
-table { width:100%; border-collapse:collapse; font-size:.8rem; }
-thead { background:rgba(17,20,24,.9); }
-th { text-align:left; padding:11px 14px; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:.6px; font-size:.7rem; border-bottom:1px solid var(--border); white-space:nowrap; }
-td { padding:12px 14px; border-bottom:1px solid var(--border); color:var(--text-secondary); white-space:nowrap; }
-tr:last-child td { border-bottom:none; }
-tr:hover td { background:var(--bg-card-hover); }
-.stock-name { color:var(--text-primary); font-weight:600; }
-.sector-badge { font-size:.68rem; background:rgba(88,166,255,.1); color:var(--blue); padding:2px 8px; border-radius:4px; }
-
-/* ──── SCREENER FILTERS ──── */
-.filter-bar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:22px; align-items:center; }
-.filter-bar select, .filter-bar input {
-  background:var(--bg-card); border:1px solid var(--border); color:var(--text-primary);
-  padding:8px 12px; border-radius:6px; font-family:inherit; font-size:.78rem;
-  outline:none; transition:.2s;
-}
-.filter-bar select:focus, .filter-bar input:focus { border-color:var(--accent); }
-.filter-bar select { min-width:140px; }
-.filter-label { font-size:.7rem; color:var(--text-muted); }
-
-/* ──── RATING TRACKER ──── */
-.rating-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; margin-bottom:30px; }
-.rating-card {
-  background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:20px; transition:.25s;
-}
-.rating-card:hover { border-color:var(--accent); }
-.rating-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; }
-.rating-house { font-family:'Syne',sans-serif; font-weight:700; font-size:.92rem; }
-.credibility-badge {
-  font-size:.68rem; font-weight:600; padding:3px 10px; border-radius:12px;
-}
-.cred-high { background:rgba(63,185,80,.15); color:var(--green); }
-.cred-med { background:rgba(230,168,23,.15); color:var(--accent2); }
-.cred-low { background:rgba(248,81,73,.15); color:var(--red); }
-.rating-stats { display:flex; gap:16px; }
-.r-stat { flex:1; }
-.r-stat-label { font-size:.66rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; }
-.r-stat-val { font-size:.92rem; font-weight:600; margin-top:2px; }
-.cred-bar-wrap { margin-top:14px; }
-.cred-bar-bg { background:var(--border); border-radius:4px; height:5px; margin-top:5px; overflow:hidden; }
-.cred-bar { height:100%; border-radius:4px; transition:width .6s ease; }
-.cred-bar.high { background:var(--green); }
-.cred-bar.med { background:var(--accent2); }
-.cred-bar.low { background:var(--red); }
-
-/* ──── MINI CHART (SVG sparkline) ──── */
-.sparkline { display:block; }
-
-/* ──── TABS ──── */
-.tabs { display:flex; gap:4px; margin-bottom:20px; background:var(--bg-card); border-radius:8px; padding:4px; width:fit-content; }
-.tabs button {
-  background:none; border:none; color:var(--text-muted);
-  padding:6px 16px; border-radius:6px; font-family:inherit; font-size:.78rem; cursor:pointer; transition:.2s;
-}
-.tabs button.active { background:var(--bg-card-hover); color:var(--text-primary); }
-
-/* ──── FOOTER ──── */
-footer {
-  border-top:1px solid var(--border); text-align:center;
-  padding:24px; margin-top:40px; color:var(--text-muted); font-size:.72rem;
-}
-
-/* ──── LOADING INDICATOR ──── */
-.loading { text-align:center; padding:40px; color:var(--text-muted); }
-
-/* ──── SCROLLBAR ──── */
-::-webkit-scrollbar { width:6px; }
-::-webkit-scrollbar-track { background:var(--bg-deep); }
-::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+.sec-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; margin-top:36px; }
+.sec-header h2 { font-family:'Syne',sans-serif; font-size:1.2rem; font-weight:700; }
+.sec-header .tag { font-size:.68rem; background:var(--accent-dim); color:var(--accent); padding:3px 10px; border-radius:12px; }
+.mini-table-wrap { overflow-x:auto; border-radius:10px; border:1px solid var(--border); margin-bottom:28px; }
+.mini-table { width:100%; border-collapse:collapse; font-size:.78rem; }
+.mini-table thead { background:rgba(17,20,24,.9); }
+.mini-table th { text-align:left; padding:10px 12px; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:.5px; font-size:.68rem; border-bottom:1px solid var(--border); }
+.mini-table td { padding:10px 12px; border-bottom:1px solid var(--border); color:var(--text-secondary); }
+.mini-table tr:last-child td { border-bottom:none; }
+.mini-table tr:hover td { background:var(--bg-card-hover); }
+.stock-name { color:var(--text-primary); font-weight:600; font-size:.82rem; }
+.sector-badge { font-size:.66rem; background:rgba(88,166,255,.1); color:var(--blue); padding:2px 7px; border-radius:4px; }
+.loading { text-align:center; padding:30px; color:var(--text-muted); font-size:.8rem; }
 </style>
 </head>
 <body>
 
-<!-- NAV -->
 <nav>
   <div class="logo">Zeroh<span>edge</span>Quant</div>
   <div class="nav-links">
     <button class="active" onclick="showSection('home')">Home</button>
-    <button onclick="showSection('learning')">Learning Hub</button>
     <button onclick="showSection('market')">Market Analysis</button>
     <button onclick="showSection('screener')">Screener</button>
-    <button onclick="showSection('ratings')">Rating Tracker</button>
   </div>
   <div class="nav-live"><div class="dot-live"></div> LIVE via Upstox</div>
 </nav>
 
-<!-- ════════ HOME ════════ -->
+<!-- HOME -->
 <div id="home" class="section active">
   <div class="hero">
     <h1>Master the <span>Quant Edge</span></h1>
-    <p>A one-stop platform for quantitative learning, deep market analysis, advanced stock screening and brokerage credibility tracking — built for the Indian capital market.</p>
-    <div class="hero-badges">
-      <div class="badge"><div class="b-dot" style="background:var(--green)"></div> Live Indian Market</div>
-      <div class="badge"><div class="b-dot" style="background:var(--blue)"></div> Quant Learning</div>
-      <div class="badge"><div class="b-dot" style="background:var(--purple)"></div> Advanced Screener</div>
-      <div class="badge"><div class="b-dot" style="background:var(--accent2)"></div> Rating Tracker</div>
-    </div>
+    <p>Real-time Indian market data powered by Upstox API</p>
   </div>
 
-  <!-- Market snapshot stats -->
+  <!-- Indices -->
   <div class="stat-row" id="index-stats">
-    <div class="loading">Loading live market data...</div>
+    <div class="loading">Loading indices...</div>
   </div>
 
-  <!-- Quick links -->
-  <div class="sec-header"><h2>Quick Access</h2></div>
-  <div class="card-grid">
-    <div class="card" onclick="showSection('learning')">
-      <div class="card-meta">📚 Learning Hub</div>
-      <h3>Start Your Quant Journey</h3>
-      <p>From basics of statistics to advanced algo strategies — structured learning for every level.</p>
-      <div class="card-tags"><span class="tag-sm green">Beginner Friendly</span><span class="tag-sm">12 Articles</span></div>
-    </div>
-    <div class="card" onclick="showSection('market')">
-      <div class="card-meta">📊 Market Analysis</div>
-      <h3>Indian Capital Market Deep Dive</h3>
-      <p>Screener-style workflow to analyse sectors, technicals, and fundamentals in one place.</p>
-      <div class="card-tags"><span class="tag-sm purple">NSE / BSE</span><span class="tag-sm yellow">Live Workflow</span></div>
-    </div>
-    <div class="card" onclick="showSection('screener')">
-      <div class="card-meta">🔍 Stock Screener</div>
-      <h3>Next-Level Stock Screening</h3>
-      <p>Multi-filter screener: P/E, ROE, Market Cap, Volume, 52-week range and more.</p>
-      <div class="card-tags"><span class="tag-sm">Multi-Filter</span><span class="tag-sm green">500+ Stocks</span></div>
-    </div>
-    <div class="card" onclick="showSection('ratings')">
-      <div class="card-meta">🏦 Rating Tracker</div>
-      <h3>Brokerage Credibility Tracker</h3>
-      <p>Track target prices from top brokerages and see which houses are truly reliable over time.</p>
-      <div class="card-tags"><span class="tag-sm yellow">Credibility Score</span><span class="tag-sm purple">15+ Houses</span></div>
-    </div>
-  </div>
-</div>
-
-<!-- ════════ LEARNING HUB ════════ -->
-<div id="learning" class="section">
-  <div class="sec-header"><h2>Learning Hub</h2><span class="tag">Blog & Tutorials</span></div>
-
-  <div class="tabs">
-    <button class="active">All</button>
-    <button>Beginner</button>
-    <button>Intermediate</button>
-    <button>Advanced</button>
+  <!-- Top Gainers -->
+  <div class="sec-header"><h2>🔥 Top Gainers</h2><span class="tag">Top 10</span></div>
+  <div class="mini-table-wrap">
+    <table class="mini-table">
+      <thead><tr><th>#</th><th>Stock</th><th>Sector</th><th>Price ₹</th><th>Change %</th></tr></thead>
+      <tbody id="top-gainers-table"><tr><td colspan="5" class="loading">Loading...</td></tr></tbody>
+    </table>
   </div>
 
-  <div class="card-grid">
-    <div class="card">
-      <div class="card-meta"><span>📅 Jan 28, 2025</span><span>• 8 min read</span></div>
-      <h3>What is Quantitative Finance? A Beginner's Guide</h3>
-      <p>Understand the fundamentals of quant finance — from basic probability to how hedge funds use math to trade markets.</p>
-      <div class="card-tags"><span class="tag-sm green">Beginner</span><span class="tag-sm">Fundamentals</span></div>
-    </div>
-    <div class="card">
-      <div class="card-meta"><span>📅 Jan 24, 2025</span><span>• 12 min read</span></div>
-      <h3>Understanding P/E, EV/EBITDA & Key Valuation Ratios</h3>
-      <p>A deep dive into the most important valuation metrics used by analysts and how to interpret them for Indian stocks.</p>
-      <div class="card-tags"><span class="tag-sm green">Beginner</span><span class="tag-sm">Valuation</span></div>
-    </div>
-    <div class="card">
-      <div class="card-meta"><span>📅 Jan 20, 2025</span><span>• 15 min read</span></div>
-      <h3>Building a Simple Moving Average Strategy in Python</h3>
-      <p>Step-by-step tutorial: fetch NSE data, calculate SMA crossovers, backtest, and evaluate returns.</p>
-      <div class="card-tags"><span class="tag-sm">Intermediate</span><span class="tag-sm purple">Python</span><span class="tag-sm">Algo</span></div>
-    </div>
-    <div class="card">
-      <div class="card-meta"><span>📅 Jan 15, 2025</span><span>• 10 min read</span></div>
-      <h3>How to Read a Stock's Balance Sheet</h3>
-      <p>Break down assets, liabilities, and equity. Learn to spot red flags and strong fundamentals.</p>
-      <div class="card-tags"><span class="tag-sm green">Beginner</span><span class="tag-sm">Fundamentals</span></div>
-    </div>
-    <div class="card">
-      <div class="card-meta"><span>📅 Jan 10, 2025</span><span>• 18 min read</span></div>
-      <h3>Mean Reversion vs Momentum: Which Strategy Works in India?</h3>
-      <p>Compare two of the most popular quant strategies with real backtested data from Nifty stocks.</p>
-      <div class="card-tags"><span class="tag-sm">Intermediate</span><span class="tag-sm yellow">Strategy</span></div>
-    </div>
-    <div class="card">
-      <div class="card-meta"><span>📅 Jan 05, 2025</span><span>• 22 min read</span></div>
-      <h3>Statistical Arbitrage: Pairs Trading on Indian Markets</h3>
-      <p>An advanced look at co-integration, spread analysis, and building a live pairs trading bot.</p>
-      <div class="card-tags"><span class="tag-sm">Advanced</span><span class="tag-sm purple">Algo</span><span class="tag-sm">Stats</span></div>
-    </div>
+  <!-- Top Losers -->
+  <div class="sec-header"><h2>📉 Top Losers</h2><span class="tag">Top 10</span></div>
+  <div class="mini-table-wrap">
+    <table class="mini-table">
+      <thead><tr><th>#</th><th>Stock</th><th>Sector</th><th>Price ₹</th><th>Change %</th></tr></thead>
+      <tbody id="top-losers-table"><tr><td colspan="5" class="loading">Loading...</td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- Most Active -->
+  <div class="sec-header"><h2>📊 Most Active</h2><span class="tag">By Volume</span></div>
+  <div class="mini-table-wrap">
+    <table class="mini-table">
+      <thead><tr><th>#</th><th>Stock</th><th>Sector</th><th>Price ₹</th><th>Volume</th></tr></thead>
+      <tbody id="most-active-table"><tr><td colspan="5" class="loading">Loading...</td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- 52W Highs -->
+  <div class="sec-header"><h2>⬆️ Near 52-Week High</h2><span class="tag">Top 10</span></div>
+  <div class="mini-table-wrap">
+    <table class="mini-table">
+      <thead><tr><th>#</th><th>Stock</th><th>Price ₹</th><th>52W High ₹</th><th>Away from High</th></tr></thead>
+      <tbody id="52w-high-table"><tr><td colspan="5" class="loading">Loading...</td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- 52W Lows -->
+  <div class="sec-header"><h2>⬇️ Near 52-Week Low</h2><span class="tag">Top 10</span></div>
+  <div class="mini-table-wrap">
+    <table class="mini-table">
+      <thead><tr><th>#</th><th>Stock</th><th>Price ₹</th><th>52W Low ₹</th><th>Away from Low</th></tr></thead>
+      <tbody id="52w-low-table"><tr><td colspan="5" class="loading">Loading...</td></tr></tbody>
+    </table>
   </div>
 </div>
 
-<!-- ════════ MARKET ANALYSIS ════════ -->
+<!-- MARKET ANALYSIS -->
 <div id="market" class="section">
-  <div class="sec-header"><h2>Market Analysis</h2><span class="tag">Screener Workflow</span></div>
-
-  <div class="stat-row" style="margin-bottom:24px;">
-    <div class="stat-card">
-      <div class="stat-label">Advances</div>
-      <div class="stat-value up">1,248</div>
-      <div class="stat-change" style="color:var(--text-muted)">Gainers today</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Declines</div>
-      <div class="stat-value down">682</div>
-      <div class="stat-change" style="color:var(--text-muted)">Losers today</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Unchanged</div>
-      <div class="stat-value" style="color:var(--text-muted)">134</div>
-      <div class="stat-change" style="color:var(--text-muted)">Flat today</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Top Sector</div>
-      <div class="stat-value" style="color:var(--blue)">IT</div>
-      <div class="stat-change up">▲ 2.41%</div>
-    </div>
-  </div>
-
-  <div class="filter-bar">
-    <span class="filter-label">Sector:</span>
-    <select><option>All Sectors</option><option>IT</option><option>Banking</option><option>FMCG</option><option>Pharma</option><option>Auto</option><option>Realty</option><option>Energy</option></select>
-    <span class="filter-label">Sort:</span>
-    <select><option>% Change</option><option>Volume</option><option>Market Cap</option><option>Price</option></select>
-    <span class="filter-label">Exchange:</span>
-    <select><option>NSE + BSE</option><option>NSE</option><option>BSE</option></select>
-  </div>
-
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>#</th><th>Stock</th><th>Sector</th><th>Price ₹</th><th>Change</th><th>% Change</th><th>Volume</th><th>Mkt Cap (Cr)</th><th>Trend 7D</th>
-        </tr>
-      </thead>
-      <tbody id="market-table"><tr><td colspan="9" class="loading">Loading live market data...</td></tr></tbody>
-    </table>
-  </div>
+  <div class="sec-header"><h2>Market Analysis</h2></div>
+  <p style="color:var(--text-secondary);font-size:.85rem;margin-bottom:20px;">Full functional filters coming in next update</p>
+  <div class="loading">Feature under development</div>
 </div>
 
-<!-- ════════ STOCK SCREENER ════════ -->
+<!-- SCREENER -->
 <div id="screener" class="section">
-  <div class="sec-header"><h2>Advanced Stock Screener</h2><span class="tag">Multi-Filter</span></div>
-
-  <div class="filter-bar" style="background:var(--bg-card);padding:16px;border-radius:10px;border:1px solid var(--border);margin-bottom:22px;">
-    <span class="filter-label">Sector:</span>
-    <select><option>All</option><option>IT</option><option>Banking</option><option>FMCG</option><option>Pharma</option><option>Auto</option><option>Realty</option><option>Energy</option></select>
-    <span class="filter-label">Market Cap:</span>
-    <select><option>All</option><option>Large Cap (>20K Cr)</option><option>Mid Cap (2K-20K)</option><option>Small Cap (<2K Cr)</option></select>
-    <span class="filter-label">P/E Ratio:</span>
-    <select><option>All</option><option>< 15</option><option>15-30</option><option>30-50</option><option>> 50</option></select>
-    <span class="filter-label">ROE:</span>
-    <select><option>All</option><option>> 20%</option><option>> 15%</option><option>> 10%</option></select>
-    <span class="filter-label">52W:</span>
-    <select><option>All</option><option>Near 52W High</option><option>Near 52W Low</option></select>
-  </div>
-
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>#</th><th>Stock</th><th>Sector</th><th>Price ₹</th><th>P/E</th><th>ROE %</th><th>Mkt Cap (Cr)</th><th>52W High</th><th>52W Low</th><th>Debt/Eq</th><th>Div Yield %</th>
-        </tr>
-      </thead>
-      <tbody id="screener-table"><tr><td colspan="11" class="loading">Loading screener data...</td></tr></tbody>
-    </table>
-  </div>
+  <div class="sec-header"><h2>Stock Screener</h2></div>
+  <p style="color:var(--text-secondary);font-size:.85rem;margin-bottom:20px;">Advanced screener coming in next update</p>
+  <div class="loading">Feature under development</div>
 </div>
 
-<!-- ════════ RATING TRACKER ════════ -->
-<div id="ratings" class="section">
-  <div class="sec-header"><h2>Brokerage Rating Tracker</h2><span class="tag">Credibility Analysis</span></div>
-
-  <div class="tabs">
-    <button class="active">All Houses</button>
-    <button>High Credibility</button>
-    <button>Target Hits</button>
-  </div>
-
-  <div class="rating-grid" id="rating-grid"></div>
-
-  <!-- Detailed target tracking table -->
-  <div class="sec-header" style="margin-top:32px;"><h2>Recent Target Prices</h2><span class="tag">Last 30 Days</span></div>
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr><th>Brokerage</th><th>Stock</th><th>Rating</th><th>Target ₹</th><th>CMP ₹</th><th>Upside %</th><th>Given On</th><th>Status</th></tr>
-      </thead>
-      <tbody id="target-table"></tbody>
-    </table>
-  </div>
-</div>
-
-<footer>© 2025 ZerohedgeQuant — Built for the Indian Quant Community. Live data powered by Upstox API. Do your own research before investing.</footer>
-
-<!-- ──── SCRIPT ──── -->
 <script>
-// ═══════════════════════════════════════════════════════
-// BACKEND API CONFIG - UPDATE THIS WITH YOUR DEPLOYED BACKEND URL
-// ═══════════════════════════════════════════════════════
-const API_URL = 'https://zerohedgequant-backend.onrender.com'; // Your live backend!
+const API_URL = 'https://zerohedgequant-backend.onrender.com';
 
-// ─── Navigation ───
 function showSection(id) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-links button').forEach(b => b.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  [...document.querySelectorAll('.nav-links button')].find(b => b.textContent.toLowerCase().includes(id === 'home' ? 'home' : id === 'learning' ? 'learn' : id === 'market' ? 'market' : id === 'screener' ? 'screen' : 'rating'))?.classList.add('active');
+  [...document.querySelectorAll('.nav-links button')].find(b => b.textContent.toLowerCase().includes(id.slice(0,4)))?.classList.add('active');
 }
 
-// ─── Tab switching ───
-document.querySelectorAll('.tabs').forEach(tabGroup => {
-  tabGroup.querySelectorAll('button').forEach(btn => {
-    btn.addEventListener('click', () => {
-      tabGroup.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-    });
-  });
-});
-
-// ═══════════════════════════════════════════════════════
-// FETCH LIVE DATA FROM BACKEND
-// ═══════════════════════════════════════════════════════
-
-// Fetch and render indices (Nifty, Sensex, etc)
+// Fetch Indices
 async function fetchIndices() {
   try {
     const response = await fetch(`${API_URL}/api/indices`);
@@ -456,208 +206,169 @@ async function fetchIndices() {
     
     if (result.success && result.data) {
       const { nifty, sensex, banknifty } = result.data;
-      
       document.getElementById('index-stats').innerHTML = `
         <div class="stat-card">
           <div class="stat-label">Nifty 50</div>
           <div class="stat-value">${nifty?.value || '---'}</div>
-          <div class="stat-change ${nifty?.pct >= 0 ? 'up' : 'down'}">${nifty?.pct >= 0 ? '▲' : '▼'} ${Math.abs(nifty?.pct || 0)}% (${nifty?.change >= 0 ? '+' : ''}${nifty?.change || 0})</div>
+          <div class="stat-change ${nifty?.pct >= 0 ? 'up' : 'down'}">${nifty?.pct >= 0 ? '▲' : '▼'} ${Math.abs(nifty?.pct || 0)}%</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Sensex</div>
           <div class="stat-value">${sensex?.value || '---'}</div>
-          <div class="stat-change ${sensex?.pct >= 0 ? 'up' : 'down'}">${sensex?.pct >= 0 ? '▲' : '▼'} ${Math.abs(sensex?.pct || 0)}% (${sensex?.change >= 0 ? '+' : ''}${sensex?.change || 0})</div>
+          <div class="stat-change ${sensex?.pct >= 0 ? 'up' : 'down'}">${sensex?.pct >= 0 ? '▲' : '▼'} ${Math.abs(sensex?.pct || 0)}%</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Bank Nifty</div>
           <div class="stat-value">${banknifty?.value || '---'}</div>
-          <div class="stat-change ${banknifty?.pct >= 0 ? 'up' : 'down'}">${banknifty?.pct >= 0 ? '▲' : '▼'} ${Math.abs(banknifty?.pct || 0)}% (${banknifty?.change >= 0 ? '+' : ''}${banknifty?.change || 0})</div>
+          <div class="stat-change ${banknifty?.pct >= 0 ? 'up' : 'down'}">${banknifty?.pct >= 0 ? '▲' : '▼'} ${Math.abs(banknifty?.pct || 0)}%</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Data Source</div>
           <div class="stat-value" style="font-size:1rem;color:var(--accent)">Upstox Live</div>
-          <div class="stat-change" style="color:var(--text-muted)">Real-time data</div>
+          <div class="stat-change" style="color:var(--text-muted)">Real-time</div>
         </div>
       `;
     }
   } catch (error) {
     console.error('Error fetching indices:', error);
-    document.getElementById('index-stats').innerHTML = `
-      <div class="stat-card">
-        <div class="stat-label">Error</div>
-        <div class="stat-value" style="font-size:0.9rem;color:var(--red)">Unable to fetch live data</div>
-        <div class="stat-change" style="color:var(--text-muted)">Check if backend is running</div>
-      </div>
-    `;
   }
 }
 
-// Fetch and render market table
-async function fetchMarketData() {
+// Fetch Top Gainers
+async function fetchTopGainers() {
   try {
-    const response = await fetch(`${API_URL}/api/market-data`);
+    const response = await fetch(`${API_URL}/api/top-gainers`);
     const result = await response.json();
     
     if (result.success && result.data) {
-      const tbody = document.getElementById('market-table');
+      const tbody = document.getElementById('top-gainers-table');
       tbody.innerHTML = result.data.map((s, i) => `
         <tr>
           <td style="color:var(--text-muted)">${i+1}</td>
           <td><span class="stock-name">${s.name}</span></td>
           <td><span class="sector-badge">${s.sector}</span></td>
           <td style="color:var(--text-primary);font-weight:600">₹${parseFloat(s.price).toLocaleString()}</td>
-          <td class="${s.change >= 0 ? 'up' : 'down'}">${s.change >= 0 ? '+' : ''}${s.change}</td>
-          <td class="${s.pct >= 0 ? 'up' : 'down'}">${s.pct >= 0 ? '+' : ''}${s.pct}%</td>
-          <td>${s.vol}</td>
-          <td>${s.cap}</td>
-          <td>${sparkSVG(s.spark, s.pct >= 0)}</td>
+          <td class="up">+${s.pct}%</td>
         </tr>
       `).join('');
     }
   } catch (error) {
-    console.error('Error fetching market data:', error);
-    document.getElementById('market-table').innerHTML = `
-      <tr><td colspan="9" style="color:var(--red);text-align:center;padding:20px;">Failed to load market data. Make sure backend is running.</td></tr>
-    `;
+    console.error('Error:', error);
   }
 }
 
-// Fetch and render screener data
-async function fetchScreenerData() {
+// Fetch Top Losers
+async function fetchTopLosers() {
   try {
-    const response = await fetch(`${API_URL}/api/screener`);
+    const response = await fetch(`${API_URL}/api/top-losers`);
     const result = await response.json();
     
     if (result.success && result.data) {
-      const tbody = document.getElementById('screener-table');
+      const tbody = document.getElementById('top-losers-table');
       tbody.innerHTML = result.data.map((s, i) => `
         <tr>
           <td style="color:var(--text-muted)">${i+1}</td>
           <td><span class="stock-name">${s.name}</span></td>
           <td><span class="sector-badge">${s.sector}</span></td>
           <td style="color:var(--text-primary);font-weight:600">₹${parseFloat(s.price).toLocaleString()}</td>
-          <td>${s.pe}</td>
-          <td class="${s.roe >= 18 ? 'up' : ''}">${s.roe}%</td>
-          <td>${s.cap}</td>
-          <td>₹${parseFloat(s.hi).toLocaleString()}</td>
-          <td>₹${parseFloat(s.lo).toLocaleString()}</td>
-          <td class="${s.de > 0.3 ? 'down' : ''}">${s.de}</td>
-          <td class="${s.div >= 2 ? 'up' : ''}">${s.div}%</td>
+          <td class="down">${s.pct}%</td>
         </tr>
       `).join('');
     }
   } catch (error) {
-    console.error('Error fetching screener data:', error);
-    document.getElementById('screener-table').innerHTML = `
-      <tr><td colspan="11" style="color:var(--red);text-align:center;padding:20px;">Failed to load screener data.</td></tr>
-    `;
+    console.error('Error:', error);
   }
 }
 
-// ═══════════════════════════════════════════════════════
-// HELPER FUNCTIONS
-// ═══════════════════════════════════════════════════════
-
-function sparkSVG(data, up) {
-  const w=60, h=22, pts=data.length, step=w/(pts-1);
-  const max=Math.max(...data), min=Math.min(...data), range=max-min||1;
-  let d = data.map((v,i) => `${i*step},${h-((v-min)/range)*h}`).join(' ');
-  const color = up ? 'var(--green)' : 'var(--red)';
-  return `<svg class="sparkline" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
-    <polyline fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" points="${d}"/>
-    <circle cx="${(pts-1)*step}" cy="${h-((data[pts-1]-min)/range)*h}" r="2.2" fill="${color}"/>
-  </svg>`;
+// Fetch Most Active
+async function fetchMostActive() {
+  try {
+    const response = await fetch(`${API_URL}/api/most-active`);
+    const result = await response.json();
+    
+    if (result.success && result.data) {
+      const tbody = document.getElementById('most-active-table');
+      tbody.innerHTML = result.data.map((s, i) => `
+        <tr>
+          <td style="color:var(--text-muted)">${i+1}</td>
+          <td><span class="stock-name">${s.name}</span></td>
+          <td><span class="sector-badge">${s.sector}</span></td>
+          <td style="color:var(--text-primary);font-weight:600">₹${parseFloat(s.price).toLocaleString()}</td>
+          <td style="color:var(--blue);font-weight:600">${s.volumeFormatted}</td>
+        </tr>
+      `).join('');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+  }
 }
 
-// ═══════════════════════════════════════════════════════
-// RATING TRACKER (Using static data for now)
-// ═══════════════════════════════════════════════════════
-
-const brokerages = [
-  { name:"Motilal Oswal", credibility:87, hits:73, total:100, accuracy:"73%", calls:42, credLevel:"high" },
-  { name:"ICICI Direct", credibility:81, hits:65, total:80, accuracy:"81%", calls:38, credLevel:"high" },
-  { name:"Kotak Securities", credibility:76, hits:58, total:76, accuracy:"76%", calls:35, credLevel:"high" },
-  { name:"HDFC Securities", credibility:72, hits:51, total:71, accuracy:"72%", calls:30, credLevel:"med" },
-  { name:"Axis Direct", credibility:68, hits:47, total:69, accuracy:"68%", calls:28, credLevel:"med" },
-  { name:"Sharekhan", credibility:64, hits:41, total:64, accuracy:"64%", calls:25, credLevel:"med" },
-  { name:"Angel One", credibility:58, hits:34, total:58, accuracy:"58%", calls:22, credLevel:"low" },
-  { name:"Nirmal Bang", credibility:71, hits:50, total:70, accuracy:"71%", calls:27, credLevel:"med" },
-];
-
-function renderRatings() {
-  const grid = document.getElementById('rating-grid');
-  grid.innerHTML = brokerages.map(b => `
-    <div class="rating-card">
-      <div class="rating-header">
-        <div class="rating-house">${b.name}</div>
-        <span class="credibility-badge cred-${b.credLevel}">${b.credLevel === 'high' ? '★ High' : b.credLevel === 'med' ? '◆ Medium' : '● Low'} Credibility</span>
-      </div>
-      <div class="rating-stats">
-        <div class="r-stat"><div class="r-stat-label">Accuracy</div><div class="r-stat-val ${b.credLevel === 'high' ? 'up' : b.credLevel === 'med' ? '' : 'down'}">${b.accuracy}</div></div>
-        <div class="r-stat"><div class="r-stat-label">Targets Hit</div><div class="r-stat-val">${b.hits}/${b.total}</div></div>
-        <div class="r-stat"><div class="r-stat-label">Active Calls</div><div class="r-stat-val">${b.calls}</div></div>
-      </div>
-      <div class="cred-bar-wrap">
-        <div style="font-size:.68rem;color:var(--text-muted)">Credibility Score: <strong style="color:var(--text-primary)">${b.credibility}/100</strong></div>
-        <div class="cred-bar-bg"><div class="cred-bar ${b.credLevel}" style="width:${b.credibility}%"></div></div>
-      </div>
-    </div>
-  `).join('');
+// Fetch 52W Highs
+async function fetch52WHighs() {
+  try {
+    const response = await fetch(`${API_URL}/api/52week-highs`);
+    const result = await response.json();
+    
+    if (result.success && result.data) {
+      const tbody = document.getElementById('52w-high-table');
+      tbody.innerHTML = result.data.map((s, i) => `
+        <tr>
+          <td style="color:var(--text-muted)">${i+1}</td>
+          <td><span class="stock-name">${s.name}</span></td>
+          <td style="color:var(--text-primary);font-weight:600">₹${parseFloat(s.price).toLocaleString()}</td>
+          <td>₹${parseFloat(s.high52w).toLocaleString()}</td>
+          <td style="color:var(--accent)">${s.distanceFromHigh}%</td>
+        </tr>
+      `).join('');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+  }
 }
 
-const targetData = [
-  { house:"Motilal Oswal", stock:"TCS", rating:"BUY", target:4100, cmp:3842, date:"Jan 28", status:"Open", statusClass:"up" },
-  { house:"ICICI Direct", stock:"Infosys", rating:"BUY", target:1880, cmp:1724, date:"Jan 26", status:"Open", statusClass:"up" },
-  { house:"Kotak Securities", stock:"HDFC Bank", rating:"HOLD", target:1780, cmp:1748, date:"Jan 24", status:"Open", statusClass:"" },
-  { house:"Motilal Oswal", stock:"Sun Pharma", rating:"BUY", target:1680, cmp:1562, date:"Jan 22", status:"Open", statusClass:"up" },
-  { house:"Sharekhan", stock:"Reliance", rating:"SELL", target:2700, cmp:2891, date:"Jan 20", status:"❌ Miss", statusClass:"down" },
-  { house:"HDFC Securities", stock:"DLF", rating:"BUY", target:920, cmp:856, date:"Jan 18", status:"Open", statusClass:"up" },
-  { house:"Angel One", stock:"NTPC", rating:"BUY", target:410, cmp:384, date:"Jan 15", status:"Open", statusClass:"up" },
-  { house:"Axis Direct", stock:"Maruti", rating:"HOLD", target:11400, cmp:11248, date:"Jan 12", status:"✅ Hit", statusClass:"up" },
-  { house:"Nirmal Bang", stock:"HUL", rating:"BUY", target:2400, cmp:2234, date:"Jan 10", status:"Open", statusClass:"up" },
-  { house:"ICICI Direct", stock:"ICICI Bank", rating:"BUY", target:950, cmp:882, date:"Jan 08", status:"Open", statusClass:"up" },
-];
-
-function renderTargets() {
-  const tbody = document.getElementById('target-table');
-  tbody.innerHTML = targetData.map(t => {
-    const upside = (((t.target - t.cmp) / t.cmp) * 100).toFixed(1);
-    return `<tr>
-      <td style="font-weight:600;color:var(--text-primary)">${t.house}</td>
-      <td class="stock-name">${t.stock}</td>
-      <td><span style="color:${t.rating==='BUY'?'var(--green)':t.rating==='SELL'?'var(--red)':'var(--accent2)'};font-weight:600">${t.rating}</span></td>
-      <td style="color:var(--text-primary);font-weight:600">₹${t.target.toLocaleString()}</td>
-      <td>₹${t.cmp.toLocaleString()}</td>
-      <td class="${upside>0?'up':'down'}">${upside>0?'+':''}${upside}%</td>
-      <td style="color:var(--text-muted)">${t.date}</td>
-      <td class="${t.statusClass}">${t.status}</td>
-    </tr>`;
-  }).join('');
+// Fetch 52W Lows
+async function fetch52WLows() {
+  try {
+    const response = await fetch(`${API_URL}/api/52week-lows`);
+    const result = await response.json();
+    
+    if (result.success && result.data) {
+      const tbody = document.getElementById('52w-low-table');
+      tbody.innerHTML = result.data.map((s, i) => `
+        <tr>
+          <td style="color:var(--text-muted)">${i+1}</td>
+          <td><span class="stock-name">${s.name}</span></td>
+          <td style="color:var(--text-primary);font-weight:600">₹${parseFloat(s.price).toLocaleString()}</td>
+          <td>₹${parseFloat(s.low52w).toLocaleString()}</td>
+          <td style="color:var(--red)">${s.distanceFromLow}%</td>
+        </tr>
+      `).join('');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+  }
 }
 
-// ═══════════════════════════════════════════════════════
-// INITIALIZE - Load all data on page load
-// ═══════════════════════════════════════════════════════
-
+// Initialize
 async function init() {
-  // Fetch live data
   await fetchIndices();
-  await fetchMarketData();
-  await fetchScreenerData();
-  
-  // Render static data
-  renderRatings();
-  renderTargets();
+  await fetchTopGainers();
+  await fetchTopLosers();
+  await fetchMostActive();
+  await fetch52WHighs();
+  await fetch52WLows();
   
   // Auto-refresh every 30 seconds
   setInterval(() => {
     fetchIndices();
-    fetchMarketData();
-    fetchScreenerData();
+    fetchTopGainers();
+    fetchTopLosers();
+    fetchMostActive();
+    fetch52WHighs();
+    fetch52WLows();
   }, 30000);
 }
 
-// Start everything
 init();
 </script>
 </body>
