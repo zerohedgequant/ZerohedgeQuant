@@ -95,13 +95,25 @@ nav {
 .mini-table-wrap { overflow-x:auto; border-radius:10px; border:1px solid var(--border); margin-bottom:28px; }
 .mini-table { width:100%; border-collapse:collapse; font-size:.78rem; }
 .mini-table thead { background:rgba(17,20,24,.9); }
-.mini-table th { text-align:left; padding:10px 12px; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:.5px; font-size:.68rem; border-bottom:1px solid var(--border); }
-.mini-table td { padding:10px 12px; border-bottom:1px solid var(--border); color:var(--text-secondary); }
+.mini-table th { text-align:left; padding:10px 12px; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:.5px; font-size:.68rem; border-bottom:1px solid var(--border); white-space:nowrap; }
+.mini-table td { padding:10px 12px; border-bottom:1px solid var(--border); color:var(--text-secondary); white-space:nowrap; }
 .mini-table tr:last-child td { border-bottom:none; }
 .mini-table tr:hover td { background:var(--bg-card-hover); }
 .stock-name { color:var(--text-primary); font-weight:600; font-size:.82rem; }
 .sector-badge { font-size:.66rem; background:rgba(88,166,255,.1); color:var(--blue); padding:2px 7px; border-radius:4px; }
 .loading { text-align:center; padding:30px; color:var(--text-muted); font-size:.8rem; }
+.filter-bar { 
+  display:flex; gap:10px; flex-wrap:wrap; margin-bottom:22px; align-items:center;
+  background:var(--bg-card); padding:16px; border-radius:10px; border:1px solid var(--border);
+}
+.filter-bar select {
+  background:var(--bg-deep); border:1px solid var(--border); color:var(--text-primary);
+  padding:8px 12px; border-radius:6px; font-family:inherit; font-size:.78rem;
+  outline:none; transition:.2s; min-width:140px;
+}
+.filter-bar select:focus { border-color:var(--accent); }
+.filter-label { font-size:.7rem; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:.5px; }
+.sparkline { display:inline-block; }
 </style>
 </head>
 <body>
@@ -116,19 +128,17 @@ nav {
   <div class="nav-live"><div class="dot-live"></div> LIVE via Upstox</div>
 </nav>
 
-<!-- HOME -->
+<!-- ═══════════════ HOME ═══════════════ -->
 <div id="home" class="section active">
   <div class="hero">
     <h1>Master the <span>Quant Edge</span></h1>
-    <p>Real-time Indian market data powered by Upstox API</p>
+    <p>Real-time Indian market data • Top movers • Advanced analytics</p>
   </div>
 
-  <!-- Indices -->
   <div class="stat-row" id="index-stats">
     <div class="loading">Loading indices...</div>
   </div>
 
-  <!-- Top Gainers -->
   <div class="sec-header"><h2>🔥 Top Gainers</h2><span class="tag">Top 10</span></div>
   <div class="mini-table-wrap">
     <table class="mini-table">
@@ -137,7 +147,6 @@ nav {
     </table>
   </div>
 
-  <!-- Top Losers -->
   <div class="sec-header"><h2>📉 Top Losers</h2><span class="tag">Top 10</span></div>
   <div class="mini-table-wrap">
     <table class="mini-table">
@@ -146,7 +155,6 @@ nav {
     </table>
   </div>
 
-  <!-- Most Active -->
   <div class="sec-header"><h2>📊 Most Active</h2><span class="tag">By Volume</span></div>
   <div class="mini-table-wrap">
     <table class="mini-table">
@@ -155,7 +163,6 @@ nav {
     </table>
   </div>
 
-  <!-- 52W Highs -->
   <div class="sec-header"><h2>⬆️ Near 52-Week High</h2><span class="tag">Top 10</span></div>
   <div class="mini-table-wrap">
     <table class="mini-table">
@@ -164,7 +171,6 @@ nav {
     </table>
   </div>
 
-  <!-- 52W Lows -->
   <div class="sec-header"><h2>⬇️ Near 52-Week Low</h2><span class="tag">Top 10</span></div>
   <div class="mini-table-wrap">
     <table class="mini-table">
@@ -174,22 +180,93 @@ nav {
   </div>
 </div>
 
-<!-- MARKET ANALYSIS -->
+<!-- ═══════════════ MARKET ANALYSIS ═══════════════ -->
 <div id="market" class="section">
-  <div class="sec-header"><h2>Market Analysis</h2></div>
-  <p style="color:var(--text-secondary);font-size:.85rem;margin-bottom:20px;">Full functional filters coming in next update</p>
-  <div class="loading">Feature under development</div>
+  <div class="sec-header"><h2>Market Analysis</h2><span class="tag">Live Data</span></div>
+
+  <div class="filter-bar">
+    <span class="filter-label">Sector:</span>
+    <select id="market-sector-filter" onchange="applyMarketFilters()">
+      <option value="all">All Sectors</option>
+      <option value="IT">IT</option>
+      <option value="Banking">Banking</option>
+      <option value="FMCG">FMCG</option>
+      <option value="Pharma">Pharma</option>
+      <option value="Auto">Auto</option>
+      <option value="Realty">Realty</option>
+      <option value="Energy">Energy</option>
+    </select>
+    
+    <span class="filter-label">Sort By:</span>
+    <select id="market-sort-filter" onchange="applyMarketFilters()">
+      <option value="change">% Change</option>
+      <option value="volume">Volume</option>
+      <option value="price">Price</option>
+      <option value="name">Name</option>
+    </select>
+  </div>
+
+  <div class="mini-table-wrap">
+    <table class="mini-table">
+      <thead>
+        <tr><th>#</th><th>Stock</th><th>Sector</th><th>Price ₹</th><th>Change</th><th>% Change</th><th>Volume</th><th>Mkt Cap (Cr)</th></tr>
+      </thead>
+      <tbody id="market-table"><tr><td colspan="8" class="loading">Loading market data...</td></tr></tbody>
+    </table>
+  </div>
 </div>
 
-<!-- SCREENER -->
+<!-- ═══════════════ SCREENER ═══════════════ -->
 <div id="screener" class="section">
-  <div class="sec-header"><h2>Stock Screener</h2></div>
-  <p style="color:var(--text-secondary);font-size:.85rem;margin-bottom:20px;">Advanced screener coming in next update</p>
-  <div class="loading">Feature under development</div>
+  <div class="sec-header"><h2>Advanced Stock Screener</h2><span class="tag">Multi-Filter</span></div>
+
+  <div class="filter-bar">
+    <span class="filter-label">Sector:</span>
+    <select id="screener-sector-filter" onchange="applyScreenerFilters()">
+      <option value="all">All</option>
+      <option value="IT">IT</option>
+      <option value="Banking">Banking</option>
+      <option value="FMCG">FMCG</option>
+      <option value="Pharma">Pharma</option>
+      <option value="Auto">Auto</option>
+      <option value="Realty">Realty</option>
+      <option value="Energy">Energy</option>
+    </select>
+    
+    <span class="filter-label">P/E Ratio:</span>
+    <select id="screener-pe-filter" onchange="applyScreenerFilters()">
+      <option value="all">All</option>
+      <option value="0-15">< 15</option>
+      <option value="15-30">15-30</option>
+      <option value="30-50">30-50</option>
+      <option value="50+">> 50</option>
+    </select>
+    
+    <span class="filter-label">ROE:</span>
+    <select id="screener-roe-filter" onchange="applyScreenerFilters()">
+      <option value="all">All</option>
+      <option value="20+">> 20%</option>
+      <option value="15+">> 15%</option>
+      <option value="10+">> 10%</option>
+    </select>
+  </div>
+
+  <div class="mini-table-wrap">
+    <table class="mini-table">
+      <thead>
+        <tr><th>#</th><th>Stock</th><th>Sector</th><th>Price ₹</th><th>P/E</th><th>ROE %</th><th>Mkt Cap (Cr)</th><th>52W High</th><th>52W Low</th><th>Debt/Eq</th><th>Div Yield %</th></tr>
+      </thead>
+      <tbody id="screener-table"><tr><td colspan="11" class="loading">Loading screener data...</td></tr></tbody>
+    </table>
+  </div>
 </div>
 
 <script>
 const API_URL = 'https://zerohedgequant-backend.onrender.com';
+
+// Global data stores
+let allMarketData = [];
+let allScreenerData = [];
 
 function showSection(id) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -198,7 +275,19 @@ function showSection(id) {
   [...document.querySelectorAll('.nav-links button')].find(b => b.textContent.toLowerCase().includes(id.slice(0,4)))?.classList.add('active');
 }
 
-// Fetch Indices
+function sparkSVG(data, up) {
+  const w=60, h=22, pts=data.length, step=w/(pts-1);
+  const max=Math.max(...data), min=Math.min(...data), range=max-min||1;
+  let d = data.map((v,i) => `${i*step},${h-((v-min)/range)*h}`).join(' ');
+  const color = up ? 'var(--green)' : 'var(--red)';
+  return `<svg class="sparkline" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+    <polyline fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" points="${d}"/>
+    <circle cx="${(pts-1)*step}" cy="${h-((data[pts-1]-min)/range)*h}" r="2.2" fill="${color}"/>
+  </svg>`;
+}
+
+// ═══════════════ FETCH FUNCTIONS ═══════════════
+
 async function fetchIndices() {
   try {
     const response = await fetch(`${API_URL}/api/indices`);
@@ -234,7 +323,6 @@ async function fetchIndices() {
   }
 }
 
-// Fetch Top Gainers
 async function fetchTopGainers() {
   try {
     const response = await fetch(`${API_URL}/api/top-gainers`);
@@ -257,7 +345,6 @@ async function fetchTopGainers() {
   }
 }
 
-// Fetch Top Losers
 async function fetchTopLosers() {
   try {
     const response = await fetch(`${API_URL}/api/top-losers`);
@@ -280,7 +367,6 @@ async function fetchTopLosers() {
   }
 }
 
-// Fetch Most Active
 async function fetchMostActive() {
   try {
     const response = await fetch(`${API_URL}/api/most-active`);
@@ -303,7 +389,6 @@ async function fetchMostActive() {
   }
 }
 
-// Fetch 52W Highs
 async function fetch52WHighs() {
   try {
     const response = await fetch(`${API_URL}/api/52week-highs`);
@@ -326,7 +411,6 @@ async function fetch52WHighs() {
   }
 }
 
-// Fetch 52W Lows
 async function fetch52WLows() {
   try {
     const response = await fetch(`${API_URL}/api/52week-lows`);
@@ -349,7 +433,131 @@ async function fetch52WLows() {
   }
 }
 
-// Initialize
+async function fetchMarketData() {
+  try {
+    const response = await fetch(`${API_URL}/api/market-data`);
+    const result = await response.json();
+    
+    if (result.success && result.data) {
+      allMarketData = result.data;
+      applyMarketFilters();
+    }
+  } catch (error) {
+    console.error('Error fetching market data:', error);
+  }
+}
+
+async function fetchScreenerData() {
+  try {
+    const response = await fetch(`${API_URL}/api/screener`);
+    const result = await response.json();
+    
+    if (result.success && result.data) {
+      allScreenerData = result.data;
+      applyScreenerFilters();
+    }
+  } catch (error) {
+    console.error('Error fetching screener data:', error);
+  }
+}
+
+// ═══════════════ FILTER FUNCTIONS ═══════════════
+
+function applyMarketFilters() {
+  const sectorFilter = document.getElementById('market-sector-filter').value;
+  const sortFilter = document.getElementById('market-sort-filter').value;
+  
+  let filtered = [...allMarketData];
+  
+  // Apply sector filter
+  if (sectorFilter !== 'all') {
+    filtered = filtered.filter(s => s.sector === sectorFilter);
+  }
+  
+  // Apply sorting
+  if (sortFilter === 'change') {
+    filtered.sort((a, b) => Math.abs(b.pct) - Math.abs(a.pct));
+  } else if (sortFilter === 'volume') {
+    filtered.sort((a, b) => (b.vol || 0) - (a.vol || 0));
+  } else if (sortFilter === 'price') {
+    filtered.sort((a, b) => b.price - a.price);
+  } else if (sortFilter === 'name') {
+    filtered.sort((a, b) => a.name.localeCompare(b.name));
+  }
+  
+  // Render
+  const tbody = document.getElementById('market-table');
+  tbody.innerHTML = filtered.map((s, i) => `
+    <tr>
+      <td style="color:var(--text-muted)">${i+1}</td>
+      <td><span class="stock-name">${s.name}</span></td>
+      <td><span class="sector-badge">${s.sector}</span></td>
+      <td style="color:var(--text-primary);font-weight:600">₹${parseFloat(s.price).toLocaleString()}</td>
+      <td class="${s.change >= 0 ? 'up' : 'down'}">${s.change >= 0 ? '+' : ''}${s.change}</td>
+      <td class="${s.pct >= 0 ? 'up' : 'down'}">${s.pct >= 0 ? '+' : ''}${s.pct}%</td>
+      <td>${s.vol || 'N/A'}</td>
+      <td>${s.cap}</td>
+    </tr>
+  `).join('');
+}
+
+function applyScreenerFilters() {
+  const sectorFilter = document.getElementById('screener-sector-filter').value;
+  const peFilter = document.getElementById('screener-pe-filter').value;
+  const roeFilter = document.getElementById('screener-roe-filter').value;
+  
+  let filtered = [...allScreenerData];
+  
+  // Apply sector filter
+  if (sectorFilter !== 'all') {
+    filtered = filtered.filter(s => s.sector === sectorFilter);
+  }
+  
+  // Apply P/E filter
+  if (peFilter !== 'all') {
+    if (peFilter === '0-15') {
+      filtered = filtered.filter(s => s.pe < 15);
+    } else if (peFilter === '15-30') {
+      filtered = filtered.filter(s => s.pe >= 15 && s.pe < 30);
+    } else if (peFilter === '30-50') {
+      filtered = filtered.filter(s => s.pe >= 30 && s.pe < 50);
+    } else if (peFilter === '50+') {
+      filtered = filtered.filter(s => s.pe >= 50);
+    }
+  }
+  
+  // Apply ROE filter
+  if (roeFilter !== 'all') {
+    if (roeFilter === '20+') {
+      filtered = filtered.filter(s => s.roe > 20);
+    } else if (roeFilter === '15+') {
+      filtered = filtered.filter(s => s.roe > 15);
+    } else if (roeFilter === '10+') {
+      filtered = filtered.filter(s => s.roe > 10);
+    }
+  }
+  
+  // Render
+  const tbody = document.getElementById('screener-table');
+  tbody.innerHTML = filtered.map((s, i) => `
+    <tr>
+      <td style="color:var(--text-muted)">${i+1}</td>
+      <td><span class="stock-name">${s.name}</span></td>
+      <td><span class="sector-badge">${s.sector}</span></td>
+      <td style="color:var(--text-primary);font-weight:600">₹${parseFloat(s.price).toLocaleString()}</td>
+      <td>${s.pe}</td>
+      <td class="${s.roe >= 18 ? 'up' : ''}">${s.roe}%</td>
+      <td>${s.cap}</td>
+      <td>₹${parseFloat(s.hi).toLocaleString()}</td>
+      <td>₹${parseFloat(s.lo).toLocaleString()}</td>
+      <td class="${s.de > 0.3 ? 'down' : ''}">${s.de}</td>
+      <td class="${s.div >= 2 ? 'up' : ''}">${s.div}%</td>
+    </tr>
+  `).join('');
+}
+
+// ═══════════════ INITIALIZE ═══════════════
+
 async function init() {
   await fetchIndices();
   await fetchTopGainers();
@@ -357,6 +565,8 @@ async function init() {
   await fetchMostActive();
   await fetch52WHighs();
   await fetch52WLows();
+  await fetchMarketData();
+  await fetchScreenerData();
   
   // Auto-refresh every 30 seconds
   setInterval(() => {
@@ -366,6 +576,8 @@ async function init() {
     fetchMostActive();
     fetch52WHighs();
     fetch52WLows();
+    fetchMarketData();
+    fetchScreenerData();
   }, 30000);
 }
 
