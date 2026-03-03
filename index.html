@@ -319,6 +319,8 @@ let currentSort={col:'changePct',dir:'desc'};
 const PAGE_SIZE=20;
 
 // NAV
+  <button onclick="window.location.href='conflict-monitor.html'">Conflict Monitor</button>
+<button onclick="window.location.href='spoofing-detection.html'">Spoofing Detection</button>
 function showPage(id){if(id!=='stockdetail')lastPage=id;document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(id).classList.add('active');const m={home:0,screener:1,optionchain:2,ratings:3,learning:4};document.querySelectorAll('.nav-link').forEach((n,i)=>{n.classList.toggle('active',m[id]===i)})}
 
 // TIME
