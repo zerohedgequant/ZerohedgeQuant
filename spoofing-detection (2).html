@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZeroHedgeQuant | Spoofing Detection</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;font-family:'JetBrains Mono',monospace;background:#060a10;color:#c8d8e8;overflow-x:hidden}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:#060a10}::-webkit-scrollbar-thumb{background:#1a3a4a;border-radius:3px}
+
+/* NAV */
+.nav{height:52px;background:rgba(8,13,20,0.95);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:space-between;padding:0 24px;border-bottom:1px solid #1a2a3a;position:sticky;top:0;z-index:1000}
+.nav-left{display:flex;align-items:center;gap:16px}
+.logo{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;letter-spacing:1px}
+.logo span{background:linear-gradient(135deg,#ff3333,#ff6644,#ffaa00);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.nav-links{display:flex;gap:4px}
+.nav-links a{font-size:10px;letter-spacing:1.5px;color:#5a7a8a;text-decoration:none;padding:6px 12px;border-radius:4px;transition:all 0.2s;font-weight:500}
+.nav-links a:hover{color:#c8d8e8;background:rgba(0,170,255,0.08)}
+.nav-links a.active{color:#f59e0b;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2)}
+.nav-right{display:flex;align-items:center;gap:10px;font-size:10px;color:#5a7a8a}
+.nav-badge{padding:3px 8px;border-radius:3px;font-size:9px;font-weight:600;letter-spacing:1px;background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3)}
+
+/* MAIN */
+.main{max-width:1440px;margin:0 auto;padding:20px 24px 40px}
+
+/* HERO */
+.hero{display:flex;align-items:center;gap:14px;margin-bottom:24px}
+.hero-icon{width:44px;height:44px;background:linear-gradient(135deg,#f59e0b,#ef4444);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px}
+.hero h1{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;letter-spacing:-0.5px}
+.hero-sub{font-size:12px;color:#64748b;margin-top:2px}
+
+/* PIPELINE */
+.pipeline{display:flex;gap:8px;margin-bottom:24px;overflow-x:auto;padding-bottom:4px}
+.pipe-step{background:#111827;border:1px solid #1e293b;border-radius:12px;padding:14px 16px;min-width:160px;cursor:pointer;transition:all 0.2s;flex-shrink:0}
+.pipe-step:hover{border-color:#f59e0b44}
+.pipe-step.active{background:#92400e22;border-color:#f59e0b66}
+.pipe-icon{font-size:22px;margin-bottom:6px}
+.pipe-title{font-size:12px;font-weight:600;color:#e2e8f0}
+.pipe-desc{font-size:10px;color:#64748b;margin-top:3px}
+.pipe-arrow{display:flex;align-items:center;color:#334155;font-size:20px;flex-shrink:0}
+.pipe-detail{background:rgba(146,64,14,0.2);border:1px solid rgba(245,158,11,0.25);border-radius:10px;padding:14px;margin-bottom:20px;font-size:12px;color:#e2e8f0;line-height:1.6;display:none}
+.pipe-detail.show{display:block}
+
+/* TABS */
+.tabs{display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid #1e293b;padding-bottom:2px}
+.tab-btn{background:none;border:none;border-bottom:2px solid transparent;color:#64748b;padding:8px 16px;cursor:pointer;font-size:12px;font-family:inherit;font-weight:500;border-radius:6px 6px 0 0;transition:all 0.2s}
+.tab-btn:hover{color:#94a3b8}
+.tab-btn.active{background:rgba(245,158,11,0.1);border-bottom-color:#f59e0b;color:#f59e0b}
+
+/* CARDS */
+.card{background:#111827;border:1px solid #1e293b;border-radius:12px;padding:20px}
+.card-title{font-size:13px;color:#64748b;margin-bottom:16px;font-weight:500;letter-spacing:0.5px}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px}
+.stat-card{background:#111827;border:1px solid #1e293b;border-radius:12px;padding:18px 20px}
+.stat-label{font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px}
+.stat-value{font-size:26px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.stat-sub{font-size:11px;color:#64748b;margin-top:4px}
+
+/* GRID */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+@media(max-width:900px){.grid-2{grid-template-columns:1fr}}
+
+/* CONFUSION MATRIX */
+.cm-grid{display:grid;grid-template-columns:80px 1fr 1fr;grid-template-rows:30px 1fr 1fr;gap:4px;margin-bottom:16px}
+.cm-header{text-align:center;font-size:9px;color:#64748b;align-self:end;text-transform:uppercase;letter-spacing:0.5px}
+.cm-side{font-size:9px;color:#64748b;writing-mode:vertical-lr;text-align:center;transform:rotate(180deg);letter-spacing:0.5px}
+.cm-cell{border-radius:8px;padding:14px;text-align:center}
+.cm-cell-val{font-size:24px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.cm-cell-label{font-size:9px;color:#64748b;margin-top:4px}
+.cm-metrics{display:flex;gap:20px;justify-content:center}
+.cm-metric-val{font-size:18px;font-weight:700;color:#f59e0b;text-align:center}
+.cm-metric-label{font-size:10px;color:#64748b;text-align:center}
+
+/* TABLE */
+.ev-table{width:100%;border-collapse:collapse;font-size:11px}
+.ev-table th{padding:8px 10px;text-align:left;color:#64748b;font-weight:500;font-size:9px;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #1e293b}
+.ev-table td{padding:8px 10px;border-bottom:1px solid rgba(30,41,59,0.4);font-family:'JetBrains Mono',monospace}
+.ev-table tr.spoof-row{background:rgba(127,29,29,0.2)}
+.ev-table tr:hover{background:rgba(255,255,255,0.02)}
+.badge{padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600}
+.badge-bid{background:rgba(16,185,129,0.2);color:#10b981}
+.badge-ask{background:rgba(239,68,68,0.2);color:#ef4444}
+.badge-spoof{color:#ef4444;font-weight:700;font-size:10px}
+.badge-flagged{color:#f59e0b;font-size:10px}
+.badge-normal{color:#64748b;font-size:10px}
+.positive{color:#10b981;font-weight:600}
+.negative{color:#ef4444;font-weight:600}
+
+/* FEATURE CARDS */
+.feat-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:700px){.feat-grid{grid-template-columns:1fr}}
+.feat-card{background:#0a0e17;border-radius:8px;padding:14px;border:1px solid #1e293b}
+.feat-card-icon{font-size:14px;margin-bottom:6px;display:inline-block}
+.feat-card-name{font-size:12px;font-weight:600;color:#f59e0b;display:inline}
+.feat-card-desc{font-size:11px;color:#64748b;line-height:1.6;margin-top:4px}
+
+/* HOW-TO */
+.howto-step{margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid #1e293b}
+.howto-step:last-child{border-bottom:none}
+.howto-num{width:28px;height:28px;background:rgba(245,158,11,0.12);border:1px solid #f59e0b;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#f59e0b;flex-shrink:0;margin-right:10px}
+.howto-title{font-size:14px;font-weight:600;color:#e2e8f0;display:inline}
+.howto-content{font-size:12px;color:#64748b;line-height:1.7;white-space:pre-line;padding-left:38px;margin-top:8px}
+
+/* CHART CONTAINERS */
+.chart-wrap{position:relative;height:280px;width:100%}
+
+/* SECTION HIDE/SHOW */
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* FOOTER */
+.footer{text-align:center;padding:24px;margin-top:40px;color:#334155;font-size:10px;border-top:1px solid #1a2a3a;letter-spacing:1px}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-left">
+    <div class="logo"><span>ZeroHedge</span>Quant</div>
+  </div>
+  <div class="nav-links">
+    <a href="index.html">HOME</a>
+    <a href="index.html#screener">SCREENER</a>
+    <a href="index.html#ratings">RATINGS</a>
+    <a href="conflict-monitor.html">CONFLICT MONITOR</a>
+    <a href="spoofing-detection.html" class="active">SPOOFING DETECTION</a>
+  </div>
+  <div class="nav-right">
+    <span class="nav-badge">RESEARCH</span>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-icon">🔍</div>
+    <div>
+      <h1>Spoofing Detection Framework</h1>
+      <div class="hero-sub">Hawkes Process × Neural Network × Profit Analysis — by Shreyash Randhe</div>
+    </div>
+  </div>
+
+  <!-- PIPELINE -->
+  <div class="pipeline" id="pipeline"></div>
+  <div class="pipe-detail" id="pipeDetail"></div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="overview">Overview</button>
+    <button class="tab-btn" data-tab="events">Event Scanner</button>
+    <button class="tab-btn" data-tab="features">Feature Analysis</button>
+    <button class="tab-btn" data-tab="howto">How to Use with Real Data</button>
+  </div>
+
+  <!-- OVERVIEW TAB -->
+  <div class="tab-panel active" id="tab-overview">
+    <div class="stat-grid" id="statCards"></div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Confusion Matrix</div>
+        <div id="confusionMatrix"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Risk Map: P(Move) vs P(Fill)</div>
+        <div class="chart-wrap"><canvas id="scatterChart"></canvas></div>
+        <div style="display:flex;gap:16px;justify-content:center;margin-top:8px;font-size:10px">
+          <span><span style="color:#ef4444">●</span> Actual Spoof</span>
+          <span><span style="color:#f59e0b">●</span> Flagged</span>
+          <span><span style="color:#3b82f6">●</span> Normal</span>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <div class="card-title">⚠ Why Precision Is Low (and what to do about it)</div>
+      <div style="font-size:12px;color:#e2e8f0;line-height:1.7">
+        <p style="margin:0 0 8px">This baseline uses synthetic data and a simple Gaussian model. In production, you'd improve it by:</p>
+        <p style="margin:0 0 4px"><strong style="color:#f59e0b">1.</strong> Using real LOB data where spoofing patterns have real market impact signatures</p>
+        <p style="margin:0 0 4px"><strong style="color:#f59e0b">2.</strong> Upgrading to a Mixture Density Network (MDN) that captures multi-modal price distributions</p>
+        <p style="margin:0 0 4px"><strong style="color:#f59e0b">3.</strong> Adding time-to-cancel as a feature (spoofers cancel within 50-500ms)</p>
+        <p style="margin:0 0 4px"><strong style="color:#f59e0b">4.</strong> Combining the profit test with the heuristic signals (size anomaly + cancel pattern)</p>
+        <p style="margin:0"><strong style="color:#f59e0b">5.</strong> Calibrating the fill probability model using actual historical fill rates per price level</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- EVENTS TAB -->
+  <div class="tab-panel" id="tab-events">
+    <div class="card">
+      <h3 style="font-size:14px;font-weight:600;margin:0 0 4px">Top Suspicious Events</h3>
+      <p style="font-size:11px;color:#64748b;margin:0 0 16px">Ranked by expected spoofing profit. Red rows = confirmed spoofing episodes.</p>
+      <div style="overflow-x:auto" id="eventTableWrap"></div>
+    </div>
+  </div>
+
+  <!-- FEATURES TAB -->
+  <div class="tab-panel" id="tab-features">
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title">Feature Values: Spoofing vs Normal</div>
+      <div class="chart-wrap" style="height:320px"><canvas id="featureChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Feature Intuition Guide</div>
+      <div class="feat-grid" id="featureGuide"></div>
+    </div>
+  </div>
+
+  <!-- HOWTO TAB -->
+  <div class="tab-panel" id="tab-howto">
+    <div class="card" id="howtoContent"></div>
+  </div>
+
+</div>
+
+<div class="footer">ZEROHEDGEQUANT × SPOOFING DETECTION FRAMEWORK — SHREYASH RANDHE</div>
+
+<script>
+// ===== DATA =====
+const RESULTS = {"summary":{"total_events":30120,"total_candidates":1325,"flagged_suspicious":508,"actual_spoofs_in_candidates":40,"true_positives":7,"false_positives":501,"false_negatives":33,"true_negatives":784},"events":[{"timestamp":34296.49,"time_readable":"09:31:36.49","side":"ASK","size":709,"distance_ticks":4,"expected_profit":108.17,"p_favorable_move":1.0,"p_fake_fill":0.041,"is_suspicious":true,"actual_is_spoof":false,"profit_if_fills":108.44,"loss_if_fake_fills":0.28},{"timestamp":34296.38,"time_readable":"09:31:36.38","side":"ASK","size":1164,"distance_ticks":1,"expected_profit":88.88,"p_favorable_move":0.941,"p_fake_fill":0.182,"is_suspicious":true,"actual_is_spoof":false,"profit_if_fills":94.73,"loss_if_fake_fills":0.12},{"timestamp":34296.39,"time_readable":"09:31:36.39","side":"ASK","size":15000,"distance_ticks":3,"expected_profit":80.96,"p_favorable_move":0.941,"p_fake_fill":0.022,"is_suspicious":true,"actual_is_spoof":true,"profit_if_fills":85.82,"loss_if_fake_fills":4.5},{"timestamp":34320.83,"time_readable":"09:32:00.83","side":"BID","size":2499,"distance_ticks":2,"expected_profit":23.01,"p_favorable_move":0.999,"p_fake_fill":0.11,"is_suspicious":true,"actual_is_spoof":false,"profit_if_fills":23.35,"loss_if_fake_fills":0.5},{"timestamp":34236.26,"time_readable":"09:30:36.26","side":"BID","size":618,"distance_ticks":7,"expected_profit":21.5,"p_favorable_move":1.0,"p_fake_fill":0.009,"is_suspicious":true,"actual_is_spoof":false,"profit_if_fills":21.52,"loss_if_fake_fills":0.43},{"timestamp":34340.26,"time_readable":"09:32:20.26","side":"ASK","size":1107,"distance_ticks":2,"expected_profit":21.33,"p_favorable_move":1.0,"p_fake_fill":0.11,"is_suspicious":true,"actual_is_spoof":false,"profit_if_fills":23.7,"loss_if_fake_fills":0.22},{"timestamp":34243.05,"time_readable":"09:30:43.05","side":"BID","size":847,"distance_ticks":8,"expected_profit":20.74,"p_favorable_move":1.0,"p_fake_fill":0.006,"is_suspicious":true,"actual_is_spoof":false,"profit_if_fills":20.78,"loss_if_fake_fills":0.68},{"timestamp":34228.34,"time_readable":"09:30:28.34","side":"BID","size":808,"distance_ticks":2,"expected_profit":19.97,"p_favorable_move":0.746,"p_fake_fill":0.11,"is_suspicious":true,"actual_is_spoof":false,"profit_if_fills":27.05,"loss_if_fake_fills":0.16},{"timestamp":34239.16,"time_readable":"09:30:39.16","side":"ASK","size":684,"distance_ticks":1,"expected_profit":19.89,"p_favorable_move":0.98,"p_fake_fill":0.182,"is_suspicious":true,"actual_is_spoof":false,"profit_if_fills":20.38,"loss_if_fake_fills":0.07},{"timestamp":34232.94,"time_readable":"09:30:32.94","side":"BID","size":602,"distance_ticks":1,"expected_profit":19.84,"p_favorable_move":0.933,"p_fake_fill":0.182,"is_suspicious":true,"actual_is_spoof":false,"profit_if_fills":21.38,"loss_if_fake_fills":0.06}],"feature_importance":[{"name":"size_anomaly_score","spoof_mean":42.48,"normal_mean":36.06},{"name":"large_order_asymmetry","spoof_mean":0.02,"normal_mean":-0.0},{"name":"order_flow_imbalance","spoof_mean":0.02,"normal_mean":-0.0},{"name":"cancel_imbalance","spoof_mean":0.04,"normal_mean":0.02},{"name":"cancel_to_place_ratio_bid","spoof_mean":0.84,"normal_mean":0.83},{"name":"cancel_to_place_ratio_ask","spoof_mean":0.82,"normal_mean":0.82}],"profit_distribution":{"spoof_mean":-3.51,"normal_mean":1.13}};
+
+const PIPELINE_STEPS = [
+  {id:1,title:"Order Book Events",desc:"Raw LOB data stream",icon:"📊",detail:"Every limit order placement, cancellation, and market order with timestamp, side, size, price, and distance from best price."},
+  {id:2,title:"Hawkes Features",desc:"Exponentially-weighted activity",icon:"⚡",detail:"For each event type × side × timescale: Σ size_i × exp(-γ·distance) × exp(-β·Δt). Captures clustering, spatial patterns, and imbalances across 3 timescales."},
+  {id:3,title:"Price Distribution NN",desc:"Predict μ and σ of ΔP",icon:"🧠",detail:"Neural network takes 26 features → outputs (mean, variance) of the conditional price change distribution over the next 500ms."},
+  {id:4,title:"Spoofing Profit Test",desc:"Would a spoofer profit?",icon:"🎯",detail:"E[Profit] = P(move) × profit_if_fill − P(fake_fills) × loss_if_fake − costs. Positive → flag as suspicious."},
+];
+
+const FEATURE_GUIDE = [
+  {name:"Size Anomaly Score",desc:"Max order size ÷ median size. Spoofers use orders 40-50x the median. This is the single strongest signal.",icon:"📏"},
+  {name:"Large Order Asymmetry",desc:"Are large orders concentrated on one side? Spoofers create a one-sided wall of liquidity.",icon:"⚖️"},
+  {name:"Order Flow Imbalance",desc:"(Bid activity - Ask activity) / total. Extreme values suggest one-sided pressure.",icon:"📈"},
+  {name:"Cancel Imbalance",desc:"Asymmetry in cancellation rates. Spoofers cancel on the fake side shortly after placement.",icon:"❌"},
+  {name:"Cancel-to-Place Ratio",desc:"High ratio on one side only = suspicious. Spoofers place then cancel, inflating this ratio.",icon:"🔄"},
+  {name:"Hawkes Intensities",desc:"Multi-timescale activity levels. Spoofing creates sudden spikes at fast timescales (β=20) that don't appear at slow ones (β=1).",icon:"⚡"},
+];
+
+const HOWTO_STEPS = [
+  {step:"1",title:"Data Source",content:"For equities: ITCH feed (NASDAQ), PITCH (CBOE/BATS), or TAQ data reconstructed into event format. For futures: CME MDP3.0 or FIX drop copies.\n\nRequired fields per event: timestamp (nanosecond precision ideal), event_type (1=add, 2=cancel, 3=trade), side (1=bid, -1=ask), price, size, order_id, best_bid, best_ask."},
+  {step:"2",title:"Feature Tuning",content:"The β (decay) and γ (spatial) parameters need tuning per instrument:\n\n• Liquid large-cap (AAPL, SPY): β = [5, 20, 100], γ = 1.0, lookback = 2s\n• Mid-cap / less liquid: β = [1, 5, 20], γ = 0.5, lookback = 10s\n• Futures (ES, NQ): β = [10, 50, 200], γ = 0.3, lookback = 1s\n\nRule of thumb: 1/β should be roughly the characteristic timescale of order book changes."},
+  {step:"3",title:"Model Upgrade Path",content:"sklearn MLP → PyTorch MDN (Mixture Density Network).\n\nThe MDN outputs parameters for 3-5 Gaussian components, capturing multi-modal price distributions. This matters because spoofed markets have bimodal distributions (price either moves as intended or reverts)."},
+  {step:"4",title:"Fill Probability Calibration",content:"Replace the exponential approximation with empirical fill rates from your data. For each (distance, size) bucket, compute: P(fill | distance, size) = count(filled) / count(placed). This is the single most impactful improvement you can make."},
+  {step:"5",title:"Real-Time Integration",content:"1. Maintain a rolling event buffer (last 5-10 seconds)\n2. On each new limit order above the size threshold, compute features from the buffer\n3. Run the profit test\n4. If suspicious, add to watchlist and track the cancel time\n5. If cancelled within 500ms AND profit test was positive → HIGH CONFIDENCE spoof alert"},
+  {step:"6",title:"Protecting Your Own Trades",content:"When you detect a likely spoof:\n• DO NOT trade in the direction the spoof is trying to push you\n• Wait 500ms-2s for the spoof to resolve\n• If the large order gets cancelled, the pressure was fake — trade the reversal\n• Consider the spoofer's intent: fake bids → price about to go DOWN (they want to buy cheap)"},
+];
+
+// ===== RENDER PIPELINE =====
+(function renderPipeline(){
+  const wrap = document.getElementById('pipeline');
+  let activePipe = null;
+  PIPELINE_STEPS.forEach((s,i)=>{
+    if(i>0){
+      const arrow = document.createElement('div');
+      arrow.className='pipe-arrow';
+      arrow.textContent='→';
+      wrap.appendChild(arrow);
+    }
+    const div = document.createElement('div');
+    div.className='pipe-step';
+    div.innerHTML=`<div class="pipe-icon">${s.icon}</div><div class="pipe-title">${s.title}</div><div class="pipe-desc">${s.desc}</div>`;
+    div.onclick=()=>{
+      document.querySelectorAll('.pipe-step').forEach(p=>p.classList.remove('active'));
+      const detail = document.getElementById('pipeDetail');
+      if(activePipe===s.id){activePipe=null;detail.classList.remove('show');return;}
+      activePipe=s.id;
+      div.classList.add('active');
+      detail.innerHTML=`<strong>${s.title}:</strong> ${s.detail}`;
+      detail.classList.add('show');
+    };
+    wrap.appendChild(div);
+  });
+})();
+
+// ===== TABS =====
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.onclick=()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+  };
+});
+
+// ===== STAT CARDS =====
+(function renderStats(){
+  const s = RESULTS.summary;
+  const cards = [
+    {label:'Total Events',value:s.total_events.toLocaleString(),sub:'Order book messages',color:'#e2e8f0'},
+    {label:'Candidates',value:s.total_candidates.toLocaleString(),sub:'Large limit orders',color:'#e2e8f0'},
+    {label:'Flagged',value:s.flagged_suspicious,sub:'Suspicious orders',color:'#f59e0b'},
+    {label:'Actual Spoofs',value:s.actual_spoofs_in_candidates,sub:'In candidate set',color:'#ef4444'},
+  ];
+  const wrap = document.getElementById('statCards');
+  cards.forEach(c=>{
+    wrap.innerHTML+=`<div class="stat-card"><div class="stat-label">${c.label}</div><div class="stat-value" style="color:${c.color}">${c.value}</div><div class="stat-sub">${c.sub}</div></div>`;
+  });
+})();
+
+// ===== CONFUSION MATRIX =====
+(function renderCM(){
+  const s = RESULTS.summary;
+  const tp=s.true_positives,fp=s.false_positives,fn=s.false_negatives,tn=s.true_negatives;
+  const precision=tp/(tp+fp)||0;
+  const recall=tp/(tp+fn)||0;
+  const f1=2*precision*recall/(precision+recall)||0;
+  const wrap = document.getElementById('confusionMatrix');
+  wrap.innerHTML=`
+    <div class="cm-grid">
+      <div></div>
+      <div class="cm-header">Pred: Spoof</div>
+      <div class="cm-header">Pred: Normal</div>
+      <div class="cm-side">Actual: Spoof</div>
+      <div class="cm-cell" style="background:rgba(16,185,129,0.13);border:1px solid rgba(16,185,129,0.25)">
+        <div class="cm-cell-val" style="color:#10b981">${tp}</div><div class="cm-cell-label">True Pos</div>
+      </div>
+      <div class="cm-cell" style="background:rgba(245,158,11,0.13);border:1px solid rgba(245,158,11,0.25)">
+        <div class="cm-cell-val" style="color:#f59e0b">${fn}</div><div class="cm-cell-label">False Neg</div>
+      </div>
+      <div class="cm-side">Actual: Normal</div>
+      <div class="cm-cell" style="background:rgba(239,68,68,0.13);border:1px solid rgba(239,68,68,0.25)">
+        <div class="cm-cell-val" style="color:#ef4444">${fp}</div><div class="cm-cell-label">False Pos</div>
+      </div>
+      <div class="cm-cell" style="background:rgba(59,130,246,0.13);border:1px solid rgba(59,130,246,0.25)">
+        <div class="cm-cell-val" style="color:#3b82f6">${tn}</div><div class="cm-cell-label">True Neg</div>
+      </div>
+    </div>
+    <div class="cm-metrics">
+      <div><div class="cm-metric-val">${(precision*100).toFixed(1)}%</div><div class="cm-metric-label">Precision</div></div>
+      <div><div class="cm-metric-val">${(recall*100).toFixed(1)}%</div><div class="cm-metric-label">Recall</div></div>
+      <div><div class="cm-metric-val">${(f1*100).toFixed(1)}%</div><div class="cm-metric-label">F1 Score</div></div>
+    </div>`;
+})();
+
+// ===== SCATTER CHART =====
+(function renderScatter(){
+  const ctx = document.getElementById('scatterChart').getContext('2d');
+  const spoofPts=[],flaggedPts=[],normalPts=[];
+  RESULTS.events.forEach(e=>{
+    const pt={x:e.p_favorable_move*100,y:e.p_fake_fill*100};
+    if(e.actual_is_spoof) spoofPts.push(pt);
+    else if(e.is_suspicious) flaggedPts.push(pt);
+    else normalPts.push(pt);
+  });
+  new Chart(ctx,{
+    type:'scatter',
+    data:{
+      datasets:[
+        {label:'Normal',data:normalPts,backgroundColor:'rgba(59,130,246,0.4)',pointRadius:4},
+        {label:'Flagged',data:flaggedPts,backgroundColor:'rgba(245,158,11,0.5)',pointRadius:5},
+        {label:'Actual Spoof',data:spoofPts,backgroundColor:'rgba(239,68,68,0.9)',pointRadius:8},
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{titleFont:{family:'JetBrains Mono'},bodyFont:{family:'JetBrains Mono',size:10}}},
+      scales:{
+        x:{title:{display:true,text:'P(Favorable Move) %',color:'#64748b',font:{size:10}},grid:{color:'#1e293b'},ticks:{color:'#64748b',font:{size:9}}},
+        y:{title:{display:true,text:'P(Fake Fills) %',color:'#64748b',font:{size:10}},grid:{color:'#1e293b'},ticks:{color:'#64748b',font:{size:9}}}
+      }
+    }
+  });
+})();
+
+// ===== EVENT TABLE =====
+(function renderEvents(){
+  const wrap = document.getElementById('eventTableWrap');
+  let html=`<table class="ev-table"><thead><tr>`;
+  ['Time','Side','Size','Dist','E[Profit]','P(Move)','P(Fill)','Status'].forEach(h=>{
+    html+=`<th>${h}</th>`;
+  });
+  html+=`</tr></thead><tbody>`;
+  RESULTS.events.forEach(e=>{
+    const cls = e.actual_is_spoof?'spoof-row':'';
+    const sideClass = e.side==='BID'?'badge-bid':'badge-ask';
+    const profitCls = e.expected_profit>0?'positive':'negative';
+    let status;
+    if(e.actual_is_spoof) status='<span class="badge-spoof">🚨 SPOOF</span>';
+    else if(e.is_suspicious) status='<span class="badge-flagged">⚠ Flagged</span>';
+    else status='<span class="badge-normal">✓ Normal</span>';
+    html+=`<tr class="${cls}">
+      <td>${e.time_readable}</td>
+      <td><span class="badge ${sideClass}">${e.side}</span></td>
+      <td>${e.size.toLocaleString()}</td>
+      <td>${e.distance_ticks}t</td>
+      <td class="${profitCls}">${e.expected_profit>0?'+':''}${e.expected_profit.toFixed(2)}</td>
+      <td style="color:#94a3b8">${(e.p_favorable_move*100).toFixed(1)}%</td>
+      <td style="color:#94a3b8">${(e.p_fake_fill*100).toFixed(1)}%</td>
+      <td>${status}</td>
+    </tr>`;
+  });
+  html+=`</tbody></table>`;
+  wrap.innerHTML=html;
+})();
+
+// ===== FEATURE CHART =====
+(function renderFeatureChart(){
+  const ctx = document.getElementById('featureChart').getContext('2d');
+  const labels = RESULTS.feature_importance.map(f=>f.name.replace(/_/g,' ').replace('score','').trim());
+  new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {label:'Spoofing',data:RESULTS.feature_importance.map(f=>Math.abs(f.spoof_mean)),backgroundColor:'rgba(239,68,68,0.7)',borderRadius:4},
+        {label:'Normal',data:RESULTS.feature_importance.map(f=>Math.abs(f.normal_mean)),backgroundColor:'rgba(59,130,246,0.7)',borderRadius:4},
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#94a3b8',font:{size:11}}},tooltip:{titleFont:{family:'JetBrains Mono'},bodyFont:{family:'JetBrains Mono',size:10}}},
+      scales:{
+        x:{grid:{color:'#1e293b'},ticks:{color:'#64748b',font:{size:9},maxRotation:25}},
+        y:{grid:{color:'#1e293b'},ticks:{color:'#64748b',font:{size:9}}}
+      }
+    }
+  });
+})();
+
+// ===== FEATURE GUIDE =====
+(function renderFeatureGuide(){
+  const wrap = document.getElementById('featureGuide');
+  FEATURE_GUIDE.forEach(f=>{
+    wrap.innerHTML+=`<div class="feat-card"><span class="feat-card-icon">${f.icon}</span> <span class="feat-card-name">${f.name}</span><div class="feat-card-desc">${f.desc}</div></div>`;
+  });
+})();
+
+// ===== HOWTO =====
+(function renderHowto(){
+  const wrap = document.getElementById('howtoContent');
+  wrap.innerHTML=`<h3 style="margin:0 0 20px;font-size:16px;color:#f59e0b;font-family:'Space Grotesk',sans-serif">Adapting to Real Market Data</h3>`;
+  HOWTO_STEPS.forEach(s=>{
+    wrap.innerHTML+=`<div class="howto-step"><span class="howto-num">${s.step}</span><span class="howto-title">${s.title}</span><div class="howto-content">${s.content}</div></div>`;
+  });
+})();
+</script>
+</body>
+</html>
