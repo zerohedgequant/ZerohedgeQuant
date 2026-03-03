@@ -33,6 +33,8 @@ a { color:var(--accent); text-decoration:none; }
 .nav-link { padding:8px 14px; border-radius:6px; font-size:13px; font-weight:500; color:var(--text-secondary); cursor:pointer; transition:all .2s; border:none; background:none; }
 .nav-link:hover { color:var(--text-primary); background:var(--bg-hover); }
 .nav-link.active { color:var(--accent); background:rgba(59,130,246,.1); }
+a.nav-link { color:var(--text-secondary); display:inline-flex; align-items:center; font-family:inherit; }
+a.nav-link:hover { color:var(--text-primary); background:var(--bg-hover); }
 .nav-right { display:flex; align-items:center; gap:12px; }
 .live-badge { display:flex; align-items:center; gap:6px; font-size:11px; font-weight:600; color:var(--green); background:rgba(34,197,94,.1); padding:4px 10px; border-radius:20px; }
 .live-dot { width:7px; height:7px; background:var(--green); border-radius:50%; animation:pulse 1.5s infinite; }
@@ -190,6 +192,8 @@ a { color:var(--accent); text-decoration:none; }
     <button class="nav-link" onclick="showPage('optionchain')">Option Chain</button>
     <button class="nav-link" onclick="showPage('ratings')">Rating Tracker</button>
     <button class="nav-link" onclick="showPage('learning')">Learning Hub</button>
+    <a class="nav-link" href="conflict-monitor.html" style="text-decoration:none">Conflict Monitor</a>
+    <a class="nav-link" href="spoofing-detection.html" style="text-decoration:none">Spoofing Detection</a>
   </div>
   <div class="nav-right">
     <div class="live-badge" id="liveBadge"><span class="live-dot"></span><span id="liveStatus">Connecting...</span></div>
@@ -319,8 +323,6 @@ let currentSort={col:'changePct',dir:'desc'};
 const PAGE_SIZE=20;
 
 // NAV
-  <button onclick="window.location.href='conflict-monitor.html'">Conflict Monitor</button>
-<button onclick="window.location.href='spoofing-detection.html'">Spoofing Detection</button>
 function showPage(id){if(id!=='stockdetail')lastPage=id;document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(id).classList.add('active');const m={home:0,screener:1,optionchain:2,ratings:3,learning:4};document.querySelectorAll('.nav-link').forEach((n,i)=>{n.classList.toggle('active',m[id]===i)})}
 
 // TIME
